@@ -10,6 +10,11 @@ export const useBannerConfig = () => {
   return context;
 };
 
+// ⭐️ 1. 통계(stat) 아이템을 위한 공통 색상 변수
+// 이 값만 수정하면 모든 stat 아이템의 색상이 변경됩니다.
+const COMMON_STAT_COLOR = '#12528bff'; // MUI 기본 파란색 (원하는 색상으로 변경 가능)
+
+
 // 기본 배너 아이템 설정
 export const DEFAULT_BANNER_ITEMS = [
   {
@@ -30,10 +35,10 @@ export const DEFAULT_BANNER_ITEMS = [
     order: 1,
     width: 130,
     config: {
-      icon: 'SearchIcon',
+      icon: 'PriorityHighOutlinedIcon', // ⭐️ 아이콘 이름도 이미지에 맞게 수정
       number: 5,
-      title: '이상탐지 (건) Day',
-      color: '#1E88E5'
+      title: '이상탐지(Day)',
+      color: COMMON_STAT_COLOR // ⭐️ 공통 색상 적용
     }
   },
   {
@@ -43,10 +48,10 @@ export const DEFAULT_BANNER_ITEMS = [
     order: 2,
     width: 130,
     config: {
-      icon: 'CalendarTodayIcon',
+      icon: 'BarChartOutlinedIcon', // ⭐️ 아이콘 이름도 이미지에 맞게 수정
       number: 7,
-      title: '이상탐지 (건) Week',
-      color: '#4CAF50'
+      title: '이상탐지(Week)',
+      color: COMMON_STAT_COLOR // ⭐️ 공통 색상 적용
     }
   },
   {
@@ -56,49 +61,49 @@ export const DEFAULT_BANNER_ITEMS = [
     order: 3,
     width: 130,
     config: {
-      icon: 'PublicIcon',
+      icon: 'WifiOutlinedIcon', // ⭐️ 아이콘 이름도 이미지에 맞게 수정
       number: 0,
-      title: '새롭게 탐지된 IP (개수)',
-      color: '#FF9800'
+      title: '새롭게 탐지된 IP',
+      color: COMMON_STAT_COLOR // ⭐️ 공통 색상 적용
+    }
+  },
+    {
+    id: 'response_time', // ⭐️ 이미지 순서에 맞게 조정 (평균 지연 시간)
+    type: 'stat',
+    enabled: true,
+    order: 4,
+    width: 130,
+    config: {
+      icon: 'NotificationsNoneOutlinedIcon', // ⭐️ 아이콘 이름도 이미지에 맞게 수정
+      number: 3,
+      title: '평균 지연 시간(ms)', // ⭐️ 텍스트 수정
+      color: COMMON_STAT_COLOR // ⭐️ 공통 색상 적용
     }
   },
   {
     id: 'unconfirmed_terminal',
     type: 'stat',
     enabled: true,
-    order: 4,
+    order: 5,
     width: 130,
     config: {
-      icon: 'LockOpenIcon',
+      icon: 'CheckCircleOutlineOutlinedIcon', // ⭐️ 아이콘 이름도 이미지에 맞게 수정
       number: 1,
-      title: '미확인 단말 (건)',
-      color: '#E53935'
+      title: '미확인 알람', // ⭐️ 텍스트 수정
+      color: COMMON_STAT_COLOR // ⭐️ 공통 색상 적용
     }
   },
   {
     id: 'critical_alert',
     type: 'stat',
     enabled: true,
-    order: 5,
-    width: 130,
-    config: {
-      icon: 'AlarmOnIcon',
-      number: 3,
-      title: '긴급 알람 (건)',
-      color: '#FF7043'
-    }
-  },
-  {
-    id: 'response_time',
-    type: 'stat',
-    enabled: false,
     order: 6,
     width: 130,
     config: {
-      icon: 'AccessTimeIcon',
-      number: 12,
-      title: '평균 위협 대응 시간 (분)',
-      color: '#9C27B0'
+      icon: 'NotificationsNoneOutlinedIcon', // ⭐️ 아이콘 이름도 이미지에 맞게 수정
+      number: 3,
+      title: '긴급 알람',
+      color: COMMON_STAT_COLOR // ⭐️ 공통 색상 적용
     }
   },
   {
@@ -111,7 +116,7 @@ export const DEFAULT_BANNER_ITEMS = [
       icon: 'LinkIcon',
       number: 23,
       title: '외부 연결 시도 건수',
-      color: '#FF5722'
+      color: COMMON_STAT_COLOR // ⭐️ 공통 색상 적용
     }
   },
   {
@@ -123,7 +128,7 @@ export const DEFAULT_BANNER_ITEMS = [
     config: {
       title: 'CPU 사용량',
       value: 25,
-      color: 'primary'
+      color: 'primary' // ⭐️ 'usage' 타입은 그대로 둠
     }
   },
   {
@@ -135,7 +140,7 @@ export const DEFAULT_BANNER_ITEMS = [
     config: {
       title: 'RAM 사용량',
       value: 67,
-      color: 'success'
+      color: 'success' // ⭐️ 'usage' 타입은 그대로 둠
     }
   },
   {
@@ -147,7 +152,7 @@ export const DEFAULT_BANNER_ITEMS = [
     config: {
       title: 'GPU 사용량',
       value: 33,
-      color: 'error'
+      color: 'error' // ⭐️ 'usage' 타입은 그대로 둠
     }
   }
 ];

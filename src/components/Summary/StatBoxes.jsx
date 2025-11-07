@@ -1,5 +1,7 @@
 import React from 'react';
 import { Box, Stack, Typography, LinearProgress, Button } from '@mui/material';
+
+// 1. 기존 아이콘 + 이미지에 표시된 아이콘 추가
 import SearchIcon from '@mui/icons-material/Search';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import PublicIcon from '@mui/icons-material/Public';
@@ -7,13 +9,19 @@ import LockOpenIcon from '@mui/icons-material/LockOpen';
 import AlarmOnIcon from '@mui/icons-material/AlarmOn';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import LinkIcon from '@mui/icons-material/Link';
+import PriorityHighOutlinedIcon from '@mui/icons-material/PriorityHighOutlined'; // 경고 (삼각형)
+import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined'; // 바 차트
+import WifiOutlinedIcon from '@mui/icons-material/WifiOutlined'; // 와이파이
+import NotificationsNoneOutlinedIcon from '@mui/icons-material/NotificationsNoneOutlined'; // 알림 벨
+import CheckCircleOutlineOutlinedIcon from '@mui/icons-material/CheckCircleOutlineOutlined'; // 체크
+
 import { useBannerConfig } from '../../hooks/BannerConfigContext';
 
 // 공통 카드 높이
 const CARD_HEIGHT = 170;
 
 // ===============================
-// 1️⃣ ModernGaugeBox (채우기 방향, 색상 로직 수정)
+// 1️⃣ ModernGaugeBox (⭐️ 원래 코드로 복원)
 // ===============================
 const ModernGaugeBox = ({ score }) => {
   const radius = 48;
@@ -40,7 +48,7 @@ const ModernGaugeBox = ({ score }) => {
   return (
     <Box
       sx={{
-        flex: 1, // 유연하게 너비 조절
+        flex: 2, // 유연하게 너비 조절
         minWidth: 0, // 무한히 작아질 수 있도록 설정
         height: CARD_HEIGHT,
         p: 1.5,
@@ -154,15 +162,14 @@ const ModernGaugeBox = ({ score }) => {
   );
 };
 
-
 // ===============================
-// 2️⃣ StatCard (⭐️ 레이아웃, 크기, 폰트 수정)
+// 2️⃣ StatCard (⭐️ 이미지 스타일: 하단 태그형 레이블)
 // ===============================
 const StatCard = ({ icon: Icon, number, title, color }) => (
   <Box
     sx={{
-      flex: 1, // 유연하게 너비 조절
-      minWidth: 0, // 무한히 작아질 수 있도록 설정
+      flex: 2, // 유연하게 너비 조절
+      minWidth: 120, // 최소 너비
       height: CARD_HEIGHT,
       borderRadius: 2,
       backgroundColor: 'white',
@@ -170,109 +177,139 @@ const StatCard = ({ icon: Icon, number, title, color }) => (
       p: 2,
       display: 'flex',
       flexDirection: 'column',
-      justifyContent: 'space-between',
+      justifyContent: 'space-between', // 상단(아이콘+숫자) / 하단(태그) 분리
+      alignItems: 'center', // 가운데 정렬
     }}
   >
-    {/* ⭐️ 3. 상단: 아이콘(좌) + 숫자(우) */}
-    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-      <Box
-        sx={{
-          width: 32, // ⭐️ 3. 아이콘 크기 증가
-          height: 32, // ⭐️ 3. 아이콘 크기 증가
-          borderRadius: '50%',
-          backgroundColor: `${color}1A`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <Icon sx={{ fontSize: 18, color: color }} />
-      </Box>
+    {/* 상단: 아이콘 + 숫자 */}
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 4, // ⭐️ 1. 간격을 1.5에서 2.5로 늘렸습니다.
+        mt: 3, // 상단 여백
+      }}
+    >
+      <Icon sx={{ fontSize: 60, color: color || '#212121' }} />
       <Typography
-        variant="h5"
+        variant="h4"
         fontWeight="bold"
-        sx={{ 
-          color: '#212121', 
-          fontSize: 26, // ⭐️ 3. 숫자 크기 증가
-          textAlign: 'right' 
+        sx={{
+          color: '#212121',
+          fontSize: 40, // ⭐️ 3. 숫자 크기를 34에서 40으로 늘렸습니다.
         }}
       >
         {number}
       </Typography>
     </Box>
 
-    {/* ⭐️ 3. 하단: 제목 */}
-    <Typography
-      variant="body2"
-      color="text.secondary"
-      sx={{ 
-        fontSize: '0.9rem', // ⭐️ 3. 제목 크기 증가
-        fontWeight: 500 
+    {/* 하단: 태그형 레이블 */}
+    <Box
+      sx={{
+        backgroundColor: '#f0f0f0',
+        color: '#555',
+        fontSize: '1.1rem', //16px
+        fontWeight: 500,
+        borderRadius: 1.5,
+        px: 1.5,
+        py: 0.5,
+        textTransform: 'none',
       }}
     >
       {title}
-    </Typography>
-  </Box>
-);
-
-// ===============================
-// 3️⃣ UsageCard (⭐️ 공간 채우기)
-// ===============================
-const UsageCard = ({ title, value, color }) => (
-  <Box
-    sx={{
-      flex: 1, // 유연하게 너비 조절
-      minWidth: 0, // 무한히 작아질 수 있도록 설정
-      height: CARD_HEIGHT,
-      borderRadius: 2,
-      backgroundColor: 'white',
-      boxShadow: '0 2px 5px rgba(0,0,0,0.05)',
-      p: 1.5,
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'space-between',
-      alignItems: 'flex-start',
-    }}
-  >
-    <Typography variant="body2" color="text.secondary" fontWeight="bold" sx={{ fontSize: '0.9rem' }}>
-      {title}
-    </Typography>
-    <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', mt: 1 }}>
-      <LinearProgress
-        variant="determinate"
-        value={value}
-        color={color}
-        sx={{
-          width: '90%',
-          height: 8,
-          borderRadius: 5,
-          backgroundColor: '#e0e0e0',
-          '& .MuiLinearProgress-bar': {
-            backgroundColor:
-              color === 'error'
-                ? '#F44336'
-                : color === 'success'
-                ? '#4CAF50'
-                : '#2196F3',
-          },
-        }}
-      />
-      <Typography variant="caption" color="text.secondary" fontWeight="bold" sx={{ mt: 0.5 }}>
-        {value}%
-      </Typography>
     </Box>
-    <Box /> {/* ⭐️ 레이아웃 유지를 위한 빈 박스 */}
   </Box>
 );
 
+
 // ===============================
-// 4️⃣ 전체 컴포넌트 (⭐️ 스크롤바 숨김)
+// 3️⃣ ResourceUsageCard (⭐️ 1개 카드로 통합)
+// ===============================
+const ResourceUsageCard = ({ items }) => {
+  const getColor = (colorName) => {
+    if (colorName === 'error') return '#F44336';
+    if (colorName === 'success') return '#4CAF50';
+    return '#2196F3'; // 'primary' or default
+  };
+
+  return (
+    <Box
+      sx={{
+        flex: '3', // 유연하게 너비 조절
+        minWidth: 200, // 최소 너비
+        height: CARD_HEIGHT,
+        borderRadius: 2,
+        backgroundColor: 'white',
+        boxShadow: '0 2px 5px rgba(0,0,0,0.05)',
+        p: 2.5,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-around', // 행간 자동 간격
+      }}
+    >
+      {items.map((item) => (
+        <Box
+          key={item.title}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            width: '100%',
+            gap: 1.5,
+          }}
+        >
+          {/* 1. 제목 */}
+          <Typography
+            variant="body1"
+            color="text.secondary"
+            fontWeight="bold"
+            sx={{ fontSize: '0.8rem', flexBasis: '30%', minWidth: '60px' }}
+          >
+            {item.title}
+          </Typography>
+
+          {/* 2. 프로그레스 바 */}
+          <LinearProgress
+            variant="determinate"
+            value={item.value}
+            sx={{
+              flex: 1, // 남은 공간 모두 차지
+              height: 15,
+              backgroundColor: '#e0e0e0',
+              '& .MuiLinearProgress-bar': {
+                backgroundColor: getColor(item.color),
+              },
+            }}
+          />
+          
+          {/* 3. 퍼센트 텍스트 */}
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            fontWeight="bold"
+            sx={{
+              fontSize: '0.9rem',
+              flexBasis: '15%',
+              minWidth: '35px',
+              textAlign: 'right', 
+            }}
+          >
+            {item.value}%
+          </Typography>
+        </Box>
+      ))}
+    </Box>
+  );
+};
+
+// ===============================
+// 4️⃣ 전체 컴포넌트 (⭐️ 렌더링 로직 수정)
 // ===============================
 export default function StatBoxes() {
   const { getEnabledItems } = useBannerConfig();
-  const enabledItems = getEnabledItems();
+  const allItems = getEnabledItems();
 
-  // 아이콘 매핑
+  // 아이콘 매핑 (이미지 아이콘 추가)
   const iconMap = {
     SearchIcon,
     CalendarTodayIcon,
@@ -281,7 +318,21 @@ export default function StatBoxes() {
     AlarmOnIcon,
     AccessTimeIcon,
     LinkIcon,
+    PriorityHighOutlinedIcon, // '이상탐지 Day' 용
+    BarChartOutlinedIcon, // '이상탐지 Week' 용
+    WifiOutlinedIcon, // '새롭게 탐지된 IP' 용
+    NotificationsNoneOutlinedIcon, // '평균 지연 시간', '긴급 알람' 용
+    CheckCircleOutlineOutlinedIcon, // '미확인 알람' 용
   };
+
+  // 1. 타입별로 아이템 분리
+  const gaugeItem = allItems.find((item) => item.type === 'gauge');
+  const statItems = allItems.filter((item) => item.type === 'stat');
+  
+  // 2. Usage 아이템은 config 객체만 추출하여 '배열'로 만듦
+  const usageItems = allItems
+    .filter((item) => item.type === 'usage')
+    .map((item) => item.config);
 
   return (
     <Stack
@@ -290,40 +341,34 @@ export default function StatBoxes() {
       sx={{
         width: '100%',
         flexWrap: 'nowrap', // 한 줄에 모두 표시
-        height: CARD_HEIGHT, // 고정 높이 유지
+        overflowX: 'auto', // 항목이 많아지면 스크롤
+        height: CARD_HEIGHT + 10, // 스크롤바 공간 포함
+        py: '5px', // 스크롤바 가려지지 않게
       }}
     >
-      {enabledItems.map((item) => {
-        if (item.type === 'gauge') {
-          return <ModernGaugeBox key={item.id} score={item.config.score} />;
-        }
-        
-        if (item.type === 'stat') {
-          const IconComponent = iconMap[item.config.icon] || SearchIcon;
-          return (
-            <StatCard
-              key={item.id}
-              icon={IconComponent}
-              number={item.config.number}
-              title={item.config.title}
-              color={item.config.color}
-            />
-          );
-        }
-        
-        if (item.type === 'usage') {
-          return (
-            <UsageCard
-              key={item.id}
-              title={item.config.title}
-              value={item.config.value}
-              color={item.config.color}
-            />
-          );
-        }
-        
-        return null;
+      {/* 1. 위협 점수 카드 (ModernGaugeBox) 렌더링 */}
+      {gaugeItem && (
+        <ModernGaugeBox key={gaugeItem.id} score={gaugeItem.config.score} />
+      )}
+
+      {/* 2. 통계 카드 (StatCard) 렌더링 */}
+      {statItems.map((item) => {
+        const IconComponent = iconMap[item.config.icon] || SearchIcon; // 기본 아이콘
+        return (
+          <StatCard
+            key={item.id}
+            icon={IconComponent}
+            number={item.config.number}
+            title={item.config.title}
+            color={item.config.color}
+          />
+        );
       })}
+
+      {/* 3. 리소스 사용량 카드 (ResourceUsageCard) 렌더링 (단 1개) */}
+      {usageItems.length > 0 && (
+        <ResourceUsageCard items={usageItems} />
+      )}
     </Stack>
   );
 }

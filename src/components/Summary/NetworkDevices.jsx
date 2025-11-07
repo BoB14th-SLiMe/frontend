@@ -91,23 +91,22 @@ const LayerSection = ({ label, children, showDivider = true, alignItems = "flex-
 export default function NetworkDevices() {
     const { deviceConfig } = useNetworkDeviceConfig();
     
-    const chunkedDevices = [];
-    for (let i = 0; i < deviceConfig.devices.length; i += 3) {
-        chunkedDevices.push(deviceConfig.devices.slice(i, i + 3));
-    }
-    
+    // 🚨 chunkedDevices 로직을 삭제합니다.
+
     return (
-        <DashboardBlock title="네트워크 장치" sx={{ height: '100%', flex: 6, overflowY: 'auto' }}>
-            <Stack spacing={3} sx={{ py: 2 }}> 
+        // ⭐️ 1. DashboardBlock에서 overflowY: 'auto' 제거
+        <DashboardBlock title="네트워크 장치" sx={{ height: '100%', flex: 6 }}>
+            {/* ⭐️ 2. 메인 Stack이 100% 높이를 갖도록 설정 */}
+            <Stack spacing={3} sx={{ py: 2, height: '100%' }}> 
                 
-                {/* 제어 계층: 'center' (중앙 정렬) */}
+                {/* 1. 제어 계층 (변경 없음) */}
                 <LayerSection label="제어 계층" alignItems="center">
                     <Box display="flex" justifyContent="center">
                         <DeviceCard {...deviceConfig.control} />
                     </Box>
                 </LayerSection>
 
-                {/* 스위치: 'center' (중앙 정렬) */}
+                {/* 2. 스위치 (변경 없음) */}
                 <LayerSection label="스위치" alignItems="center">
                     <Box display="flex" justifyContent="center" alignItems="center" gap={3}>
                         <DeviceCard 
@@ -122,27 +121,55 @@ export default function NetworkDevices() {
                     </Box>
                 </LayerSection>
 
-                <LayerSection 
-                  label={`장치 (${deviceConfig.devices.length})`}
-                  alignItems="center" 
-                  showDivider={false}
+                {/* ⭐️ 3. '장치' 섹션을 LayerSection 대신 수동 Flex Box로 구현 */}
+                <Box 
+                    sx={{
+                        flex: 1, // 남은 세로 공간 모두 차지
+                        minHeight: 0, // 내용이 많아도 수축 가능하도록
+                        display: 'flex',
+                        alignItems: 'center', // 라벨과 콘텐츠 박스 세로 중앙 정렬
+                        gap: 2,
+                        mb: 2, // LayerSection의 mb={2}와 일치
+                    }}
                 >
-                    <Stack spacing={3}>
-                        {chunkedDevices.map((row, idx) => (
-                            <Box key={idx} display="flex" justifyContent="center" gap={2} flexWrap="wrap">
-                                {row.map(device => (
-                                    <DeviceCard 
-                                        key={device.id}
-                                        name={device.name}
-                                        ip={device.ip}
-                                        icon="DataObjectIcon"
-                                        color={device.color}
-                                    />
-                                ))}
-                            </Box>
-                        ))}
-                    </Stack>
-                </LayerSection>
+                    {/* 3a. 레이블 (LayerSection과 동일한 스타일) */}
+                    <Typography 
+                        variant="body2" 
+                        color="text.secondary" 
+                        sx={{ minWidth: 60 }}
+                    >
+                        {`장치 (${deviceConfig.devices.length})`}
+                    </Typography>
+                    
+                    {/* 3b. 콘텐츠 래퍼 (이 박스가 스크롤됨) */}
+                    <Box 
+                        sx={{
+                            flex: 1,
+                            height: '100%', // 부모(flex:1)의 높이를 100% 사용
+                            overflowY: 'auto', // ⭐️ 장치가 많으면 이 영역만 스크롤
+                        }}
+                    >
+                        {/* 3c. 장치 그리드 (chunked 대신 flex-wrap으로 반응형) */}
+                        <Box 
+                            sx={{
+                                display: 'flex',
+                                flexWrap: 'wrap', // ⭐️ 공간이 없으면 자동으로 줄바꿈
+                                justifyContent: 'center', // 중앙 정렬
+                                gap: 2,
+                            }}
+                        >
+                            {deviceConfig.devices.map(device => (
+                                <DeviceCard 
+                                    key={device.id}
+                                    name={device.name}
+                                    ip={device.ip}
+                                    icon="DataObjectIcon"
+                                    color={device.color}
+                                />
+                            ))}
+                        </Box>
+                    </Box>
+                </Box>
             </Stack>
         </DashboardBlock>
     );
