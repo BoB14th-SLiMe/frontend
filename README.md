@@ -19,11 +19,10 @@
     ```sh
     git clone https://github.com/BoB14th-SLiMe/Front.git
     ```
-    *(참고: `your-username`을 실제 GitHub 사용자 이름과 저장소 경로로 변경해야 합니다.)*
 
 2.  **프로젝트 디렉터리로 이동**
     ```sh
-    cd ot-dashboard
+    cd Front
     ```
 
 3.  **의존성 설치**
