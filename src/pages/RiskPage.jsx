@@ -32,6 +32,11 @@ const PAGE_LAYOUT = {
     top5: 1,
     incidence: 1,
   },
+  // 오른쪽 영역의 상세 보고서와 관리자 사후조치 높이 비율
+  rightColumn: {
+    detailReport: 1.55,
+    adminAction: 1,
+  },
 };
 
 export default function RiskPage() { 
@@ -94,21 +99,25 @@ export default function RiskPage() {
             <Stack direction="column" spacing={SPACING} sx={{ flex: PAGE_LAYOUT.mainColumns.right }}>
                 
                 {/* 2-A. 상세 보고서 (래퍼) */}
-                <DetailReport
-                    event={selectedEvent} // ⭐️ 래퍼에도 event 전달 (타이틀 변경용)
-                >
-                    <Stack spacing={2} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}> 
-                        <ReportDetails 
-                            event={selectedEvent} // ⭐️ 상태 전달
-                        />
-                        <AnalysisContent 
-                            event={selectedEvent} // ⭐️ 상태 전달
-                            sx={{ flex: 1, minHeight: 0 }} // 남은 공간 모두 차지
-                        />
-                    </Stack>
-                </DetailReport>
+                <Box sx={{ flex: PAGE_LAYOUT.rightColumn.detailReport, minHeight: 0 }}>
+                    <DetailReport
+                        event={selectedEvent} // ⭐️ 래퍼에도 event 전달 (타이틀 변경용)
+                    >
+                        <Stack spacing={2} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}> 
+                            <ReportDetails 
+                                event={selectedEvent} // ⭐️ 상태 전달
+                            />
+                            <AnalysisContent 
+                                event={selectedEvent} // ⭐️ 상태 전달
+                                sx={{ flex: 1, minHeight: 0 }} // 남은 공간 모두 차지
+                            />
+                        </Stack>
+                    </DetailReport>
+                </Box>
                 {/* 2-B. 관리자 사후조치 */}
-                <AdministratorAction />
+                <Box sx={{ flex: PAGE_LAYOUT.rightColumn.adminAction, minHeight: 0 }}>
+                    <AdministratorAction />
+                </Box>
 
             </Stack>
         </Stack>

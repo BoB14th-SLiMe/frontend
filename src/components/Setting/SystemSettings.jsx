@@ -24,10 +24,11 @@ const SystemSettings = () => {
           columnGap: 4,
           rowGap: 2.5,
           alignItems: 'start',
+          justifyItems: 'center',
         }}
       >
         {/* 화면 자동 갱신 주기 */}
-        <Box sx={{ maxWidth: 240 }}>
+        <Box sx={{ width: '100%', maxWidth: 240 }}>
           <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 0.5, fontSize: '0.85rem' }}>
             화면 자동 갱신 주기 (초)
           </Typography>
@@ -49,7 +50,7 @@ const SystemSettings = () => {
         </Box>
 
         {/* 데이터 보관 기간 */}
-        <Box sx={{ maxWidth: 240 }}>
+        <Box sx={{ width: '100%', maxWidth: 240 }}>
           <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 0.5, fontSize: '0.85rem' }}>
             데이터 보관 기간 (일)
           </Typography>
@@ -71,7 +72,7 @@ const SystemSettings = () => {
         </Box>
 
         {/* 임계값 */}
-        <Box sx={{ maxWidth: 240 }}>
+        <Box sx={{ width: '100%', maxWidth: 240 }}>
           <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 0.5, fontSize: '0.85rem' }}>
             CPU, RAM, GPU 임계값
           </Typography>
@@ -91,7 +92,7 @@ const SystemSettings = () => {
         </Box>
 
         {/* 관리자 등록 */}
-        <Box sx={{ maxWidth: 240 }}>
+        <Box sx={{ width: '100%', maxWidth: 240 }}>
           <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 0.5, fontSize: '0.85rem' }}>
             관리자 등록
           </Typography>
@@ -112,7 +113,6 @@ const SystemSettings = () => {
                 fontSize: '0.75rem',
                 height: 26,
                 minWidth: 50,
-                borderRadius: '5px',
               }}
             >
               추가

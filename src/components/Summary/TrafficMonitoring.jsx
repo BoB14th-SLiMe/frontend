@@ -233,16 +233,14 @@ const TrafficMonitoring = () => {
   return (
     <DashboardBlock
       title="트래픽 모니터링" 
-      // ⭐️ controls prop 제거
-      // controls={toggleButtons}
-      sx={{ height: '100%', flex: 1, overflow: 'hidden' }}
+      sx={{ height: '100%', flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
     >
       <Box
         ref={chartRef}
         sx={{
           width: '100%',
-          height: 250, 
-          minHeight: 200,
+          flex: 1,
+          minHeight: 0,
         }}
       />
     </DashboardBlock>

@@ -95,11 +95,11 @@ export default function AdministratorAction() {
           </Menu>
         </>
       }
-      sx={{ flex: 0.8 }}
+      sx={{ flex: 0.8, height: '100%', display: 'flex', flexDirection: 'column' }}
     >
       {/* 폼 영역 */}
       <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="ko">
-        <Stack spacing={2} sx={{ mt: 0.5 }}>
+        <Stack spacing={2} sx={{ mt: 0.5, flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
           <Stack direction="row" spacing={2} alignItems="center">
             
             {/* 조치일자 */}
@@ -140,7 +140,7 @@ export default function AdministratorAction() {
           </Stack>
 
           {/* [조치사항] */}
-          <Box>
+          <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
             <Box sx={{ 
               display: 'flex', 
               justifyContent: 'space-between', 
@@ -174,10 +174,20 @@ export default function AdministratorAction() {
               value={actionContent}
               onChange={(e) => setActionContent(e.target.value)}
               multiline
-              rows={5} 
               placeholder="조치사항을 입력하세요"
               fullWidth
               variant="outlined"
+              sx={{
+                flex: 1,
+                '& .MuiInputBase-root': {
+                  height: '100%',
+                  alignItems: 'flex-start',
+                },
+                '& .MuiInputBase-input': {
+                  height: '100% !important',
+                  overflow: 'auto !important',
+                },
+              }}
             />
           </Box>
           

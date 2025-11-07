@@ -13,14 +13,15 @@ const AnalysisSubSection = ({ title, children }) => (
       borderRadius: 2,
       display: 'flex',
       flexDirection: 'column',
-      justifyContent: 'center',
+      justifyContent: 'flex-start',
+      alignItems: 'flex-start',
       paddingX: 1.5,
-      paddingY: 0,
+      paddingY: 1,
       boxSizing: 'border-box',
       overflow: 'hidden' // 내용이 길 경우를 대비
     }}
   >
-    <Typography variant="subtitle1" fontWeight="bold" sx={{ fontSize: 'body1.fontSize', marginBottom: 0.1 }}>
+    <Typography variant="subtitle1" fontWeight="bold" sx={{ fontSize: 'body1.fontSize', marginBottom: 0.5 }}>
       {title}
     </Typography>
     <Typography
@@ -32,6 +33,7 @@ const AnalysisSubSection = ({ title, children }) => (
         whiteSpace: 'normal',
         overflow: 'hidden',
         textOverflow: 'ellipsis',
+        textAlign: 'left',
       }}
     >
       {children}

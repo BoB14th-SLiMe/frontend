@@ -9,6 +9,8 @@ import {
   TextField,
   InputAdornment,
   Button,
+  ToggleButtonGroup,
+  ToggleButton,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -74,16 +76,28 @@ export default function FilterBar({
           <Typography variant="body2" color="text.secondary" gutterBottom>
             처리 상태
           </Typography>
-          <Select
+          <ToggleButtonGroup
             value={status}
-            onChange={(e) => onFilterChange('status', e.target.value)}
-            displayEmpty
-            sx={selectStyle}
+            exclusive
+            onChange={(e, newValue) => {
+              if (newValue !== null) {
+                onFilterChange('status', newValue);
+              }
+            }}
+            size="small"
+            sx={{
+              height: 35,
+              '& .MuiToggleButton-root': {
+                flex: 1,
+                textTransform: 'none',
+                border: '1px solid #e0e0e0',
+              }
+            }}
           >
-            <MenuItem value="all">전체</MenuItem>
-            <MenuItem value="pending">미처리</MenuItem>
-            <MenuItem value="completed">처리 완료</MenuItem>
-          </Select>
+            <ToggleButton value="all">전체</ToggleButton>
+            <ToggleButton value="pending">미처리</ToggleButton>
+            <ToggleButton value="completed">처리 완료</ToggleButton>
+          </ToggleButtonGroup>
         </FormControl>
 
         <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="ko">

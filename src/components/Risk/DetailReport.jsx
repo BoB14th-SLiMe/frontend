@@ -13,7 +13,7 @@ export default function DetailReport({ event, children }) {
   return (
     <DashboardBlock 
       title={event ? `상세 보고서 #${event.id}` : '상세 보고서'} 
-      sx={{ flex: 1, height: '100%' }}
+      sx={{ flex: 2, height: '100%' }}
     >
             {/* 자식 컴포넌트(ReportDetails, AnalysisContent)가 여기에 배치됨 */}
             {children}

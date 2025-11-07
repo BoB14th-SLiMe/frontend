@@ -187,7 +187,7 @@ const StatCard = ({ icon: Icon, number, title, color }) => (
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 4, // ⭐️ 1. 간격을 1.5에서 2.5로 늘렸습니다.
+        gap: 4, 
         mt: 3, // 상단 여백
       }}
     >

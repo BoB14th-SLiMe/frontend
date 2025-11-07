@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { 
-  Paper, Typography, Box, Stack, Divider, Button, IconButton, 
+  Paper, Typography, Box, Stack, Divider, Button,
   TextField, Dialog, DialogTitle, DialogContent, DialogActions,
-  List, ListItem, ListItemText, ListItemSecondaryAction, Tooltip
+  List, ListItem, ListItemText, ListItemSecondaryAction
 } from '@mui/material';
 import ComputerIcon from '@mui/icons-material/Computer';
 import DataObjectIcon from '@mui/icons-material/DataObject';
@@ -10,26 +10,10 @@ import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import SpeedIcon from '@mui/icons-material/Speed';
 import LinkIcon from '@mui/icons-material/Link';
 import AddIcon from '@mui/icons-material/Add';
-import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
-import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
-import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
-import PaletteIcon from '@mui/icons-material/Palette';
 import { useNetworkDeviceConfig } from "../../hooks/NetworkDeviceConfigContext";
 
-// 색상 팔레트 (...동일...)
-const COLOR_PALETTE = [
-  { name: '빨강', color: '#ef5350' },
-  { name: '파랑', color: '#42a5f5' },
-  { name: '초록', color: '#66bb6a' },
-  { name: '주황', color: '#ff9800' },
-  { name: '보라', color: '#ab47bc' },
-  { name: '청록', color: '#26a69a' },
-  { name: '분홍', color: '#ec407a' },
-  { name: '노랑', color: '#ffca28' },
-];
-
-// 장치 카드 (프리뷰용) (...동일...)
+// 장치 카드 (프리뷰용)
 const DeviceCard = ({ name, ip, icon, color }) => {
   const IconComponent = icon === 'ComputerIcon' ? ComputerIcon : 
                        icon === 'CompareArrowsIcon' ? CompareArrowsIcon : DataObjectIcon;
@@ -78,50 +62,14 @@ const SwitchInfoCard = ({ traffic, connections }) => (
     minWidth: 200, 
     display: 'flex', 
     gap: 1, 
-    backgroundColor: '#fafafa' 
+    backgroundColor: '#ffffff' 
   }}>
     <InfoItem icon={SpeedIcon} label="트래픽" value={traffic} color="#42a5f5" />
     <InfoItem icon={LinkIcon} label="연결" value={connections} color="#ff9800" />
   </Box>
 );
 
-// 색상 선택 다이얼로그 (...동일...)
-const ColorPickerDialog = ({ open, onClose, currentColor, onSelectColor }) => (
-  <Dialog open={open} onClose={onClose}>
-    <DialogTitle>색상 선택</DialogTitle>
-    <DialogContent>
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, p: 2 }}>
-        {COLOR_PALETTE.map(({ name, color }) => (
-          <Tooltip key={color} title={name}>
-            <Box
-              onClick={() => {
-                onSelectColor(color);
-                onClose();
-              }}
-              sx={{
-                width: 60,
-                height: 60,
-                backgroundColor: color,
-                borderRadius: 2,
-                cursor: 'pointer',
-                border: currentColor === color ? '4px solid #000' : '2px solid #e0e0e0',
-                transition: 'transform 0.2s',
-                '&:hover': {
-                  transform: 'scale(1.1)',
-                }
-              }}
-            />
-          </Tooltip>
-        ))}
-      </Box>
-    </DialogContent>
-    <DialogActions>
-      <Button onClick={onClose}>닫기</Button>
-    </DialogActions>
-  </Dialog>
-);
-
-// 장치 추가 다이얼로그 (...동일...)
+// 장치 추가 다이얼로그
 const AddDeviceDialog = ({ open, onClose, onAdd }) => {
   const [name, setName] = useState('');
   const [ip, setIp] = useState('');
@@ -168,38 +116,35 @@ const AddDeviceDialog = ({ open, onClose, onAdd }) => {
 
 
 export default function NetworkTopologySettings() {
-  const { deviceConfig, updateNodePosition, updateNodeColor } = useNetworkDeviceConfig();
-  const [selectedNode, setSelectedNode] = useState(null);
-  const [color, setColor] = useState("#000000");
-  const [isEditMode, setIsEditMode] = useState(false); // 편집 모드 상태
-  const [addDialogOpen, setAddDialogOpen] = useState(false); // 장비 추가 다이얼로그
-  const [colorPickerOpen, setColorPickerOpen] = useState(false); // 색상 선택 다이얼로그
-  const [selectedDevice, setSelectedDevice] = useState(null); // 색상 변경 대상 장치
+  const { 
+    deviceConfig, 
+    deleteDevice, 
+    addFromDiscovered: addFromDiscoveredContext,
+    addDevice 
+  } = useNetworkDeviceConfig();
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
 
-  // TODO: 저장 로직 구현 필요
   const handleSave = () => {
     setIsEditMode(false);
-    // 여기에 저장 관련 API 호출 등을 추가할 수 있습니다.
   };
 
-  // TODO: 핸들러 함수 로직 구현 필요
-  const handleDeleteDevice = (id) => console.log('Delete device:', id);
-  const handleMoveDevice = (index, direction) => console.log('Move device:', index, direction);
-  const addFromDiscovered = (device) => console.log('Add from discovered:', device);
-  const handleAddDevice = (device) => console.log('Add device:', device);
-
-  // 노드 클릭 핸들러
-  const handleNodeClick = (node) => {
-    setSelectedNode(node);
-    setColor(node.color || "#000000");
+  const handleDeleteDevice = (id) => {
+    deleteDevice(id);
   };
 
-  // 색상 변경 핸들러
-  const handleColorChange = (newColor) => {
-    setColor(newColor);
-    if (selectedNode) {
-      updateNodeColor(selectedNode.id, newColor);
-    }
+  const handleAddFromDiscovered = (device) => {
+    addFromDiscoveredContext(device);
+  };
+
+  const handleAddDevice = (deviceData) => {
+    const newDevice = {
+      id: `plc${Date.now()}`,
+      name: deviceData.name,
+      ip: deviceData.ip,
+      color: '#42a5f5'
+    };
+    addDevice(newDevice);
   };
 
   const chunkedDevices = [];
@@ -224,7 +169,7 @@ export default function NetworkTopologySettings() {
 
       <Box sx={{ display: 'flex', gap: 1, flex: 1, overflow: 'hidden' }}>
         {/* 왼쪽: 프리뷰 */}
-        <Paper sx={{ flex: 1, p: 1.5, backgroundColor: '#fafafa', overflow: 'auto' }}>
+        <Paper sx={{ flex: 1, p: 1.5, backgroundColor: '#ffffffff', overflow: 'auto' }}>
           {/* ⬇️ spacing={2} -> 1로 변경 */}
           <Stack spacing={1}>
             {/* 제어 계층 */}
@@ -289,7 +234,7 @@ export default function NetworkTopologySettings() {
         </Paper>
 
         {/* 오른쪽: 설정 */}
-        <Paper sx={{ width: 350, p: 1.5, backgroundColor: '#f5f5f5', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <Paper sx={{ width: 450, p: 1.5, backgroundColor: '#f5f5f5', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           {isEditMode && (
             <Button
               fullWidth
@@ -306,7 +251,7 @@ export default function NetworkTopologySettings() {
           <Box sx={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 1.5 }}>
             {/* 활성 장치 */}
             <Box>
-              <Typography variant="caption" color="primary" fontWeight="bold" sx={{ mb: 0.5, display: 'block' }}>
+              <Typography variant="caption" color="primary" fontWeight="bold" sx={{ mb: 1, display: 'block' }}>
                 활성 장치 ({deviceConfig.devices.length})
               </Typography>
               <List sx={{ p: 0 }}>
@@ -315,12 +260,11 @@ export default function NetworkTopologySettings() {
                     key={device.id}
                     sx={{
                       backgroundColor: 'white',
-                      // ⬇️ mb: 0.5 -> 0.25로 변경
-                      mb: 0.25,
+                      mb: 0.5,
                       borderRadius: 1,
                       border: '1px solid #e0e0e0',
-                      // ⬇️ p: 1 -> 0.5로 변경
-                      p: 0.5
+                      p: 1,
+                      pr: 10,
                     }}
                   >
                     <Box
@@ -338,36 +282,15 @@ export default function NetworkTopologySettings() {
                     />
                     {isEditMode && (
                       <ListItemSecondaryAction>
-                        {/* ... 아이콘 버튼들 ...동일... */}
-                        <IconButton
+                        <Button
                           size="small"
-                          onClick={() => handleMoveDevice(index, 'up')}
-                          disabled={index === 0}
-                        >
-                          <ArrowUpwardIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleMoveDevice(index, 'down')}
-                          disabled={index === deviceConfig.devices.length - 1}
-                        >
-                          <ArrowDownwardIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          onClick={() => {
-                            setSelectedDevice(device.id);
-                            setColorPickerOpen(true);
-                          }}
-                        >
-                          <PaletteIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                          size="small"
+                          variant="outlined"
+                          color="error"
                           onClick={() => handleDeleteDevice(device.id)}
+                          sx={{ minWidth: '60px' }}
                         >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
+                          삭제
+                        </Button>
                       </ListItemSecondaryAction>
                     )}
                   </ListItem>
@@ -388,12 +311,11 @@ export default function NetworkTopologySettings() {
                       key={device.id}
                       sx={{
                         backgroundColor: '#fff9e6',
-                        // ⬇️ mb: 0.5 -> 0.25로 변경
-                        mb: 0.25,
+                        mb: 0.5,
                         borderRadius: 1,
                         border: '1px solid #ffe082',
-                        // ⬇️ p: 1 -> 0.5로 변경
-                        p: 0.5
+                        p: 1,
+                        pr: 10,
                       }}
                     >
                       <Box
@@ -411,15 +333,15 @@ export default function NetworkTopologySettings() {
                       />
                       {isEditMode && (
                         <ListItemSecondaryAction>
-                          <Tooltip title="추가하기">
-                            <IconButton
-                              size="small"
-                              onClick={() => addFromDiscovered(device)}
-                              color="primary"
-                            >
-                              <AddIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            color="primary"
+                            onClick={() => handleAddFromDiscovered(device)}
+                            sx={{ minWidth: '60px' }}
+                          >
+                            추가
+                          </Button>
                         </ListItemSecondaryAction>
                       )}
                     </ListItem>
@@ -432,12 +354,6 @@ export default function NetworkTopologySettings() {
       </Box>
 
       {/* 다이얼로그 */}
-      <ColorPickerDialog
-        open={colorPickerOpen}
-        onClose={() => setColorPickerOpen(false)}
-        currentColor={deviceConfig?.devices?.find(d => d.id === selectedDevice)?.color}
-        onSelectColor={handleColorChange}
-      />
       <AddDeviceDialog
         open={addDialogOpen}
         onClose={() => setAddDialogOpen(false)}

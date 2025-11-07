@@ -12,14 +12,16 @@ const DashboardBlock = ({ title, controls, sx, children }) => (
             ...sx 
         }}
     >
-        <Box sx={{ padding: 1.2, display: 'flex', flexDirection: 'column', minHeight: 0, flexGrow: 1 }}> 
+        <Box sx={{ padding: 1.2, display: 'flex', flexDirection: 'column', minHeight: 0, flex: 1 }}> 
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                 <Typography variant="h6" fontWeight="bold">
                     {title}
                 </Typography>
                 {controls && <Box>{controls}</Box>}
             </Box>
-            {children}
+            <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+                {children}
+            </Box>
         </Box>
     </Box>
 );

@@ -76,7 +76,7 @@ export const DEFAULT_BANNER_ITEMS = [
     config: {
       icon: 'NotificationsNoneOutlinedIcon', // ⭐️ 아이콘 이름도 이미지에 맞게 수정
       number: 3,
-      title: '평균 지연 시간(ms)', // ⭐️ 텍스트 수정
+      title: 'MTTR(ms)', // ⭐️ 텍스트 수정
       color: COMMON_STAT_COLOR // ⭐️ 공통 색상 적용
     }
   },
@@ -103,19 +103,6 @@ export const DEFAULT_BANNER_ITEMS = [
       icon: 'NotificationsNoneOutlinedIcon', // ⭐️ 아이콘 이름도 이미지에 맞게 수정
       number: 3,
       title: '긴급 알람',
-      color: COMMON_STAT_COLOR // ⭐️ 공통 색상 적용
-    }
-  },
-  {
-    id: 'external_connection',
-    type: 'stat',
-    enabled: false,
-    order: 7,
-    width: 130,
-    config: {
-      icon: 'LinkIcon',
-      number: 23,
-      title: '외부 연결 시도 건수',
       color: COMMON_STAT_COLOR // ⭐️ 공통 색상 적용
     }
   },

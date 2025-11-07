@@ -34,7 +34,7 @@ export default function ThreatTypeTop5() {
         // 4. 범례(Legend) 설정 (요구사항 1, 2)
         legend: {
             show: true,
-            bottom: 10,           // 차트 하단에서 10px 띄움
+            bottom: 15,           // 차트 하단에서 15px 띄움
             left: 'center',       // 수평 중앙 정렬
             orient: 'horizontal', // 가로 방향으로 배치
             icon: 'circle',       // 아이콘을 이미지처럼 원형으로
@@ -54,8 +54,8 @@ export default function ThreatTypeTop5() {
                 // 6. 도넛 차트 모양 설정 [내부 반지름, 외부 반지름]
                 radius: ['30%', '50%'],
                 // 7. 차트 위치 중앙 정렬 (요구사항 1)
-                // [가로, 세로] - 세로를 '45%'로 하여 하단 범례 공간 확보
-                center: ['50%', '22.5%'],
+                // [가로, 세로] - 세로를 '40%'로 하여 하단 범례 공간 확보 및 상단 잘림 방지
+                center: ['50%', '25%'],
                 avoidLabelOverlap: false,
                 // 차트 조각 위에 표시되는 기본 라벨 숨기기
                 label: {

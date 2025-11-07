@@ -1,6 +1,6 @@
 // src/pages/SettingsPage.jsx
 import React from 'react';
-import { Stack } from '@mui/material';
+import { Stack, Box } from '@mui/material';
 
 // 1. 4개의 설정 컴포넌트를 import 합니다.
 // (경로는 pages 폴더 기준 ../components/Setting/ 입니다)
@@ -19,14 +19,22 @@ export default function SettingsPage() {
       
       {/* 3-1. 상단 행 (Top Row) - flex: 1을 주어 높이를 유연하게 조절 */}
       <Stack direction="row" spacing={spacing} sx={{ flex: 0.60, overflow: 'hidden' }}>
-        <SystemSettings />
-        <TopBannerSettings />
+        <Box sx={{ flex: 1}}>
+          <SystemSettings />
+        </Box>
+        <Box sx={{ flex: 2 }}>
+          <TopBannerSettings />
+        </Box>
       </Stack>
 
       {/* 3-2. 하단 행 (Bottom Row) - flex: 1을 주어 높이를 유연하게 조절 */}
       <Stack direction="row" spacing={spacing} sx={{ flex: 1.25, overflow: 'hidden' }}>
-        <AssetManagementSettings />
-        <NetworkTopologySettings />
+        <Box sx={{ flex: 1 }}>
+          <AssetManagementSettings />
+        </Box>
+        <Box sx={{ flex: 2 }}>
+          <NetworkTopologySettings />
+        </Box>
       </Stack>
       
     </Stack>
