@@ -17,7 +17,7 @@
 
 1.  **저장소 복제(Clone)**
     ```sh
-    git clone https://github.com/your-username/ot-dashboard.git
+    git clone https://github.com/BoB14th-SLiMe/Front.git
     ```
     *(참고: `your-username`을 실제 GitHub 사용자 이름과 저장소 경로로 변경해야 합니다.)*
 
