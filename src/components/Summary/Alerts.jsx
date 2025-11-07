@@ -114,7 +114,7 @@ export default function Alerts({ onAlertConfirm }) {
                         status={alert.status}
                         risk={alert.risk}
                         // ⭐️ handleConfirm에 alert.id 전달
-                        onConfirm={() => handleConfirm(alert.id)}
+                        onConfirm={() => onAlertConfirm(alert.id)}
                     />
                 ))}
             </Box>

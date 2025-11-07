@@ -66,27 +66,18 @@ const stableSort = (array, comparator) => {
 
 export default function ThreatEventTable({ width, height, data = [], onEventSelect }) {
   
-  const [tableData, setTableData] = useState(data);
   const [sortBy, setSortBy] = useState('id');
   const [sortOrder, setSortOrder] = useState('desc');
 
-  useEffect(() => {
-    setTableData(data);
-  }, [data]);
-
   const sortedData = useMemo(() => {
-    return stableSort(tableData, createComparator(sortOrder, sortBy));
-  }, [tableData, sortOrder, sortBy]);
+    const sorted = stableSort(data, createComparator(sortOrder, sortBy));
+    console.log('🔍 ThreatEventTable 받은 데이터:', data.length, '개');
+    console.log('🔍 정렬 후 데이터:', sorted.length, '개');
+    console.log('🔍 정렬 후 ID 목록:', sorted.map(d => d.id));
+    return sorted;
+  }, [data, sortOrder, sortBy]);
 
-  const handleStatusChange = (id, newStatus) => {
-    setTableData((prev) =>
-      prev.map((item) =>
-        item.id === id
-          ? { ...item, status: STATUS_MAP[newStatus], statusValue: newStatus }
-          : item
-      )
-    );
-  };
+
 
   const SortControls = (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -128,12 +119,15 @@ export default function ThreatEventTable({ width, height, data = [], onEventSele
         component={Paper}
         elevation={0}
         sx={{
-          flex: 1, // 남은 공간을 모두 채우도록 수정
+          flex: 1,
           minHeight: 0,
-          overflow: 'auto', // 스크롤 자동 생성
+          overflow: 'auto',
+          '& .MuiTable-root': {
+            minWidth: '100%',
+          }
         }}
       >
-        <Table stickyHeader size="small">
+        <Table size="small">
           <TableHead>
             <TableRow>
               {TABLE_HEADERS.map((header) => (
@@ -148,76 +142,86 @@ export default function ThreatEventTable({ width, height, data = [], onEventSele
             </TableRow>
           </TableHead>
           <TableBody>
-            {sortedData.map((row) => (
-              <TableRow
-                key={row.id}
-                sx={{
-                  '&:hover': { bgcolor: '#f5f5f5' },
-                  '& td': { py: 1.5 },
-                  ...(row.severityLevel >= 2 && {
-                    bgcolor: row.severityColor === 'error' ? 'rgba(211, 47, 47, 0.04)' : 'rgba(245, 124, 0, 0.04)',
-                  }),
-                }}
-              >
-                <TableCell align="center">
-                  <Chip
-                    label={row.severity}
-                    color={row.severityColor}
-                    size="small"
-                    sx={{ fontWeight: 600, minWidth: 50, height: 24 }}
-                  />
-                </TableCell>
-                <TableCell align="center">{row.id}</TableCell>
-                <TableCell align="center">{row.timestamp}</TableCell>
-                <TableCell align="center">{row.threatType}</TableCell>
-                <TableCell align="center">
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                    {row.sourceIp}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {row.macAddress}
-                  </Typography>
-                </TableCell>
-                <TableCell align="center">{row.targetDevice}</TableCell>
-                <TableCell align="center">{row.detectionMethod}</TableCell>
-                <TableCell align="center">
-                  <Select
-                    value={row.statusValue}
-                    onChange={(e) => handleStatusChange(row.id, e.target.value)}
-                    size="small"
-                    sx={{
-                      minWidth: 110,
-                      height: 32,
-                      '& .MuiOutlinedInput-notchedOutline': { borderColor: '#e0e0e0' },
-                    }}
-                  >
-                    <MenuItem value="new">신규</MenuItem>
-                    <MenuItem value="investigating">확인중</MenuItem>
-                    <MenuItem value="completed">조치완료</MenuItem>
-                  </Select>
-                </TableCell>
-                <TableCell align="center">
-                  <Typography
-                    variant="body2"
-                    onClick={() => {
-                      // ⭐️ [수정] onEventSelect가 있으면 항상 실행
-                      if (onEventSelect) {
-                        onEventSelect(row);
-                      }
-                    }}
-                    sx={{
-                      // ⭐️ [수정] '확인'만 파란색, 나머지는 회색
-                      color: row.report === '확인' ? 'primary.main' : 'text.secondary',
-                      cursor: 'pointer',
-                      // ⭐️ [수정] 마우스 올리면 항상 밑줄
-                      '&:hover': { textDecoration: 'underline' },
-                    }}
-                  >
-                    {row.report}
+            {sortedData.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={TABLE_HEADERS.length} align="center">
+                  <Typography variant="body2" color="text.secondary" sx={{ py: 4 }}>
+                    필터 조건에 맞는 데이터가 없습니다.
                   </Typography>
                 </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              sortedData.map((row, index) => {
+                console.log(`  📌 렌더링 중: Index ${index} - ID: ${row.id}, status: ${row.statusValue}, severity: ${row.severity}`);
+                return (
+                  <TableRow
+                    key={row.id}
+                    sx={{
+                      '&:hover': { bgcolor: '#f5f5f5' },
+                      '& td': { py: 1.5 },
+                      ...(row.severityLevel >= 2 && {
+                        bgcolor: row.severityColor === 'error' ? 'rgba(211, 47, 47, 0.04)' : 'rgba(245, 124, 0, 0.04)',
+                      }),
+                    }}
+                  >
+                    <TableCell align="center">
+                      <Chip
+                        label={row.severity}
+                        color={row.severityColor}
+                        size="small"
+                        sx={{ fontWeight: 600, minWidth: 50, height: 24 }}
+                      />
+                    </TableCell>
+                    <TableCell align="center">{row.id}</TableCell>
+                    <TableCell align="center">{row.timestamp}</TableCell>
+                    <TableCell align="center">{row.threatType}</TableCell>
+                    <TableCell align="center">
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                        {row.sourceIp}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {row.macAddress}
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="center">{row.targetDevice}</TableCell>
+                    <TableCell align="center">{row.detectionMethod}</TableCell>
+                    <TableCell align="center">
+                      <Select
+                        value={row.statusValue}
+                        
+                        size="small"
+                        sx={{
+                          minWidth: 110,
+                          height: 32,
+                          '& .MuiOutlinedInput-notchedOutline': { borderColor: '#e0e0e0' },
+                        }}
+                      >
+                        <MenuItem value="new">신규</MenuItem>
+                        <MenuItem value="investigating">확인중</MenuItem>
+                        <MenuItem value="completed">조치완료</MenuItem>
+                      </Select>
+                    </TableCell>
+                    <TableCell align="center">
+                      <Typography
+                        variant="body2"
+                        onClick={() => {
+                          if (onEventSelect) {
+                            onEventSelect(row);
+                          }
+                        }}
+                        sx={{
+                          color: row.report === '확인' ? 'primary.main' : 'text.secondary',
+                          cursor: 'pointer',
+                          '&:hover': { textDecoration: 'underline' },
+                        }}
+                      >
+                        {row.report}
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
           </TableBody>
         </Table>
       </TableContainer>
