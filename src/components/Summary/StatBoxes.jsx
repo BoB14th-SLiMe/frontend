@@ -323,7 +323,6 @@ export default function StatBoxes() {
     WifiOutlinedIcon, // '새롭게 탐지된 IP' 용
     NotificationsNoneOutlinedIcon, // '평균 지연 시간', '긴급 알람' 용
     CheckCircleOutlineOutlinedIcon, // '미확인 알람' 용
-    AccessTimeIcon,
   };
 
   // 1. 타입별로 아이템 분리

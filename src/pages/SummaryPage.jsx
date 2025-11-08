@@ -14,11 +14,7 @@ import Alerts from '../components/Summary/Alerts';
 export default function SummaryPage() {
     // ⭐️ 2. useNavigate 훅 사용
     const navigate = useNavigate();
-
-    /**
-     * ⭐️ 3. Alerts 컴포넌트에서 "확인" 클릭 시 실행될 함수
-     * URL 파라미터에 eventId를 담아 /risk 페이지로 이동시킵니다.
-     */
+    
     const handleAlertConfirm = (id) => {
         console.log(`SummaryPage: ${id}번 이벤트 확인. /risk 페이지로 이동.`);
         navigate(`/risk?eventId=${id}`);

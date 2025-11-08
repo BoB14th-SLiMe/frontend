@@ -135,9 +135,6 @@ export default function ThreatEventTable({ width, height, data = [], onEventSele
   const sortedData = useMemo(() => {
     const [sortBy, sortOrder] = sortConfig.split('_');
     const sorted = stableSort(data, createComparator(sortOrder, sortBy));
-    console.log('🔍 ThreatEventTable 받은 데이터:', data.length, '개');
-    console.log('🔍 정렬 후 데이터:', sorted.length, '개');
-    console.log('🔍 정렬 후 ID 목록:', sorted.map(d => d.id));
     return sorted;
   }, [data, sortConfig]);
 
@@ -201,7 +198,6 @@ export default function ThreatEventTable({ width, height, data = [], onEventSele
               </TableRow>
             ) : (
               sortedData.map((row, index) => {
-                console.log(`  📌 렌더링 중: Index ${index} - ID: ${row.id}, status: ${row.statusValue}, severity: ${row.severity}`);
                 return (
                   <TableRow
                     key={row.id}

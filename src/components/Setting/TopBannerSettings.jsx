@@ -14,13 +14,117 @@ import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import { useBannerConfig } from '../../hooks/BannerConfigContext';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  rectSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+// New SortableItem component
+function SortableItem({ item, isEditing, renderEditForm, onTitleDoubleClick, onToggleItem }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({ id: item.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <Grid item ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <Paper
+        variant="outlined"
+        sx={{
+          p: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          width: 120,
+          height: 62,
+          cursor: 'grab',
+          borderWidth: 2,
+          borderColor: 'divider',
+          backgroundColor: 'background.paper',
+          transition: 'all 0.2s',
+          '&:hover': {
+            boxShadow: 2,
+            borderColor: 'primary.main',
+            backgroundColor: 'action.hover',
+          }
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'flex-end' }}>
+          <IconButton
+            size="small"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleItem(item.id);
+            }}
+            sx={{ p: 0.5, cursor: 'pointer' }}
+          >
+            <RemoveIcon fontSize="small" />
+          </IconButton>
+        </Box>
+
+        {isEditing ? (
+          <Box sx={{ width: '100%', mt: 0.5 }} onClick={(e) => e.stopPropagation()}>
+            {renderEditForm(item)}
+          </Box>
+        ) : (
+          <Typography
+            variant="body2"
+            color="text.primary"
+            align="center"
+            onDoubleClick={(e) => {
+              e.stopPropagation();
+              onTitleDoubleClick(item);
+            }}
+            sx={{ 
+              cursor: 'text',
+              userSelect: 'none',
+              width: '100%',
+              '&:hover': {
+                color: 'primary.main',
+              }
+            }}
+          >
+            {item.config.title || item.id}
+          </Typography>
+        )}
+      </Paper>
+    </Grid>
+  );
+}
+
 
 export default function TopBannerSettings() {
   const { bannerItems, toggleItem, updateItemConfig, resetConfig, reorderItems } =
     useBannerConfig();
   const [editingId, setEditingId] = useState(null);
   const [editValues, setEditValues] = useState({});
-  const [selectedForSwap, setSelectedForSwap] = useState(null);
+  
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const handleEditStart = (item) => {
     setEditingId(item.id);
@@ -38,39 +142,21 @@ export default function TopBannerSettings() {
     setEditValues({});
   };
 
-  const handleTitleDoubleClick = (item) => {
-    handleEditStart(item);
-  };
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+    if (active.id !== over.id) {
+      const oldIndex = bannerItems.findIndex((item) => item.id === active.id);
+      const newIndex = bannerItems.findIndex((item) => item.id === over.id);
+      
+      // Check if we are trying to mix usage and non-usage items
+      const activeItem = bannerItems[oldIndex];
+      const overItem = bannerItems[newIndex];
+      if (activeItem.type === 'usage' && overItem.type !== 'usage' || activeItem.type !== 'usage' && overItem.type === 'usage') {
+          // Don't allow mixing
+          return;
+      }
 
-  const handleCardClick = (item, index) => {
-    if (editingId === item.id) return; // 편집 중이면 무시
-    
-    if (selectedForSwap === null) {
-      // 첫 번째 선택
-      setSelectedForSwap({ item, index });
-    } else {
-      // 두 번째 선택 - 위치 교환
-      if (selectedForSwap.item.id === item.id) {
-        // 같은 카드 클릭하면 선택 해제
-        setSelectedForSwap(null);
-        return;
-      }
-      
-      const firstIsUsage = selectedForSwap.item.type === 'usage';
-      const secondIsUsage = item.type === 'usage';
-      
-      // Usage끼리만 바꿀 수 있고, 일반 카드끼리만 바꿀 수 있음
-      if (firstIsUsage !== secondIsUsage) {
-        // Usage와 일반 카드는 교환 불가 - 선택만 바꿈
-        setSelectedForSwap({ item, index });
-        return;
-      }
-      
-      const fromGlobalIndex = bannerItems.findIndex(i => i.id === selectedForSwap.item.id);
-      const toGlobalIndex = bannerItems.findIndex(i => i.id === item.id);
-      
-      reorderItems(fromGlobalIndex, toGlobalIndex);
-      setSelectedForSwap(null);
+      reorderItems(oldIndex, newIndex);
     }
   };
 
@@ -100,7 +186,6 @@ export default function TopBannerSettings() {
     />
   );
 
-  // --- 기존 로직 (변경 없음) ---
   const enabledItems = bannerItems.filter((item) => item.enabled);
   const disabledItems = bannerItems.filter((item) => !item.enabled);
 
@@ -145,77 +230,30 @@ export default function TopBannerSettings() {
         <Divider sx={{ mb: 2 }} />
 
         <Box sx={{ flex: 1, overflowY: 'auto' }}>
-          <Grid container spacing={1.5}>
-            {enabledItems.map((item, index) => (
-              <Grid item key={item.id}>
-                <Paper
-                  variant="outlined"
-                  onClick={() => handleCardClick(item, index)}
-                  sx={{
-                    p: 1,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    width: 120,
-                    height: 62,
-                    cursor: 'pointer',
-                    borderWidth: 2,
-                    borderColor: selectedForSwap?.item.id === item.id ? 'primary.main' : 'divider',
-                    backgroundColor: selectedForSwap?.item.id === item.id ? 'action.selected' : 'background.paper',
-                    transition: 'all 0.2s',
-                    '&:hover': {
-                      boxShadow: 2,
-                      borderColor: selectedForSwap?.item.id === item.id ? 'primary.dark' : 'primary.main',
-                      backgroundColor: 'action.hover',
-                    }
-                  }}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'flex-end' }}>
-                    <IconButton
-                      size="small"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleItem(item.id);
-                      }}
-                      sx={{ p: 0.5 }}
-                    >
-                      <RemoveIcon fontSize="small" />
-                    </IconButton>
-                  </Box>
-
-                  {editingId === item.id ? (
-                    <Box sx={{ width: '100%', mt: 0.5 }} onClick={(e) => e.stopPropagation()}>
-                      {renderEditForm(item)}
-                    </Box>
-                  ) : (
-                    <Typography
-                      variant="body2"
-                      color="text.primary"
-                      align="center"
-                      onDoubleClick={(e) => {
-                        e.stopPropagation();
-                        handleTitleDoubleClick(item);
-                      }}
-                      sx={{ 
-                        cursor: 'text',
-                        userSelect: 'none',
-                        width: '100%',
-                        '&:hover': {
-                          color: 'primary.main',
-                        }
-                      }}
-                    >
-                      {item.config.title || item.id}
-                    </Typography>
-                  )}
-                </Paper>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext items={enabledItems.map(i => i.id)} strategy={rectSortingStrategy}>
+              <Grid container spacing={1.5}>
+                {enabledItems.map((item) => (
+                  <SortableItem
+                    key={item.id}
+                    item={item}
+                    isEditing={editingId === item.id}
+                    renderEditForm={renderEditForm}
+                    onTitleDoubleClick={handleEditStart}
+                    onToggleItem={toggleItem}
+                  />
+                ))}
               </Grid>
-            ))}
-          </Grid>
+            </SortableContext>
+          </DndContext>
         </Box>
       </Paper>
 
-      {/* 오른쪽:한 항목 */}
+      {/* 오른쪽: 비활성화된 항목 */}
       <Paper 
         sx={{ 
           flex: 0.3,
@@ -275,7 +313,7 @@ export default function TopBannerSettings() {
                       align="center"
                       onDoubleClick={(e) => {
                         e.stopPropagation();
-                        handleTitleDoubleClick(item);
+                        handleEditStart(item);
                       }}
                       sx={{ 
                         mt: 0.5,

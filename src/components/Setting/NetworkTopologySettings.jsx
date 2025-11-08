@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   Paper, Typography, Box, Stack, Divider, Button,
   TextField, Dialog, DialogTitle, DialogContent, DialogActions,
-  List, ListItem, ListItemText, ListItemSecondaryAction
+  List, ListItem, ListItemText, ListItemSecondaryAction, IconButton
 } from '@mui/material';
 import ComputerIcon from '@mui/icons-material/Computer';
 import DataObjectIcon from '@mui/icons-material/DataObject';
@@ -11,7 +11,24 @@ import SpeedIcon from '@mui/icons-material/Speed';
 import LinkIcon from '@mui/icons-material/Link';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
+import DragHandleIcon from '@mui/icons-material/DragHandle'; // Import drag handle
 import { useNetworkDeviceConfig } from "../../hooks/NetworkDeviceConfigContext";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 // 장치 카드 (프리뷰용)
 const DeviceCard = ({ name, ip, icon, color }) => {
@@ -41,7 +58,7 @@ const DeviceCard = ({ name, ip, icon, color }) => {
   );
 };
 
-// 스위치 정보 (...동일...)
+// 스위치 정보
 const InfoItem = ({ icon: Icon, label, value, color }) => (
   <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
     <Box sx={{ display: 'flex', alignItems: 'center', color, mb: 0.5 }}> 
@@ -114,16 +131,97 @@ const AddDeviceDialog = ({ open, onClose, onAdd }) => {
   );
 };
 
+// New SortableListItem for Active Devices
+function SortableListItem({ device, isEditMode, onDelete }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({ id: device.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <ListItem
+      ref={setNodeRef}
+      style={style}
+      sx={{
+        backgroundColor: 'white',
+        mb: 0.5,
+        borderRadius: 1,
+        border: '1px solid #e0e0e0',
+        p: 1,
+        pr: isEditMode ? 12 : 1, // Make space for delete button
+      }}
+    >
+      {isEditMode && (
+        <Box {...attributes} {...listeners} sx={{ cursor: 'grab', mr: 1.5, touchAction: 'none' }}>
+          <DragHandleIcon />
+        </Box>
+      )}
+      <Box
+        sx={{
+          width: 20,
+          height: 20,
+          backgroundColor: device.color,
+          borderRadius: 1,
+          mr: 1.5
+        }}
+      />
+      <ListItemText
+        primary={<Typography variant="body2">{device.name}</Typography>}
+        secondary={<Typography variant="caption">{device.ip}</Typography>}
+      />
+      {isEditMode && (
+        <ListItemSecondaryAction>
+          <Button
+            size="small"
+            variant="outlined"
+            color="error"
+            onClick={() => onDelete(device.id)}
+            sx={{ minWidth: '60px' }}
+          >
+            삭제
+          </Button>
+        </ListItemSecondaryAction>
+      )}
+    </ListItem>
+  );
+}
+
 
 export default function NetworkTopologySettings() {
   const { 
     deviceConfig, 
     deleteDevice, 
     addFromDiscovered: addFromDiscoveredContext,
-    addDevice 
+    addDevice,
+    reorderDevices
   } = useNetworkDeviceConfig();
   const [isEditMode, setIsEditMode] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+    if (active.id !== over.id) {
+      const oldIndex = deviceConfig.devices.findIndex((d) => d.id === active.id);
+      const newIndex = deviceConfig.devices.findIndex((d) => d.id === over.id);
+      const newDevicesOrder = arrayMove(deviceConfig.devices, oldIndex, newIndex);
+      reorderDevices(newDevicesOrder);
+    }
+  };
 
   const handleSave = () => {
     setIsEditMode(false);
@@ -170,7 +268,6 @@ export default function NetworkTopologySettings() {
       <Box sx={{ display: 'flex', gap: 1, flex: 1, overflow: 'hidden' }}>
         {/* 왼쪽: 프리뷰 */}
         <Paper sx={{ flex: 1, p: 1.5, backgroundColor: '#ffffffff', overflow: 'auto' }}>
-          {/* ⬇️ spacing={2} -> 1로 변경 */}
           <Stack spacing={1}>
             {/* 제어 계층 */}
             <Box>
@@ -182,7 +279,6 @@ export default function NetworkTopologySettings() {
                   <DeviceCard {...deviceConfig.control} />
                 </Box>
               </Box>
-              {/* ⬇️ mt: 1 -> 0.5로 변경 */}
               <Divider sx={{ mt: 0.5 }} />
             </Box>
 
@@ -206,7 +302,6 @@ export default function NetworkTopologySettings() {
                   />
                 </Box>
               </Box>
-              {/* ⬇️ mt: 1 -> 0.5로 변경 */}
               <Divider sx={{ mt: 0.5 }} />
             </Box>
 
@@ -254,48 +349,27 @@ export default function NetworkTopologySettings() {
               <Typography variant="caption" color="primary" fontWeight="bold" sx={{ mb: 1, display: 'block' }}>
                 활성 장치 ({deviceConfig.devices.length})
               </Typography>
-              <List sx={{ p: 0 }}>
-                {deviceConfig.devices.map((device, index) => (
-                  <ListItem
-                    key={device.id}
-                    sx={{
-                      backgroundColor: 'white',
-                      mb: 0.5,
-                      borderRadius: 1,
-                      border: '1px solid #e0e0e0',
-                      p: 1,
-                      pr: 10,
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        width: 20,
-                        height: 20,
-                        backgroundColor: device.color,
-                        borderRadius: 1,
-                        mr: 1.5
-                      }}
-                    />
-                    <ListItemText
-                      primary={<Typography variant="body2">{device.name}</Typography>}
-                      secondary={<Typography variant="caption">{device.ip}</Typography>}
-                    />
-                    {isEditMode && (
-                      <ListItemSecondaryAction>
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          color="error"
-                          onClick={() => handleDeleteDevice(device.id)}
-                          sx={{ minWidth: '60px' }}
-                        >
-                          삭제
-                        </Button>
-                      </ListItemSecondaryAction>
-                    )}
-                  </ListItem>
-                ))}
-              </List>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={deviceConfig.devices.map(d => d.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <List sx={{ p: 0 }}>
+                    {deviceConfig.devices.map((device) => (
+                      <SortableListItem
+                        key={device.id}
+                        device={device}
+                        isEditMode={isEditMode}
+                        onDelete={handleDeleteDevice}
+                      />
+                    ))}
+                  </List>
+                </SortableContext>
+              </DndContext>
             </Box>
 
             {/* 발견된 장치 */}
