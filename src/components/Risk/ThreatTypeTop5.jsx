@@ -27,6 +27,7 @@ export default function ThreatTypeTop5() {
 
     // 3. ECharts 옵션 설정
     const option = {
+        animation: false,
         tooltip: {
             trigger: 'item',
             formatter: '{b} : {c}건 ({d}%)' // 호버 시 툴팁 포맷

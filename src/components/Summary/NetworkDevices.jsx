@@ -64,7 +64,7 @@ const SwitchInfoCard = ({ traffic, connections }) => (
         backgroundColor: '#fafafa' 
     }}>
         <InfoItem icon={SpeedIcon} label="트래픽" value={traffic} color="#42a5f5" />
-        <InfoItem icon={LinkIcon} label="연결" value={connections} color="#ff9800" />
+        <InfoItem icon={LinkIcon} label="연결" value={connections} color="#42a5f5" />
     </Box>
 );
 
@@ -85,7 +85,7 @@ const LayerSection = ({ label, children, showDivider = true, alignItems = "flex-
             </Typography>
             <Box flex={1}>{children}</Box>
         </Box>
-        {showDivider && <Divider />}
+        {showDivider && <Box sx={{ px: 10 }}><Divider /></Box>}
     </Box>
 );
 
@@ -107,7 +107,7 @@ export default function NetworkDevices() {
             title="네트워크 장치" 
             sx={{ 
                 height: '100%', 
-                flex: 6, 
+                flex: 5, 
                 display: 'flex', 
                 flexDirection: 'column' 
             }}
@@ -132,7 +132,7 @@ export default function NetworkDevices() {
 
                 {/* 2. 스위치 */}
                 <LayerSection label="스위치" alignItems="center">
-                    <Box display="flex" justifyContent="center" alignItems="center" gap={3}>
+                    <Box display="flex" justifyContent="center" alignItems="flex-start" gap={3}>
                         <DeviceCard 
                             name={deviceConfig.switch.name}
                             icon={deviceConfig.switch.icon}

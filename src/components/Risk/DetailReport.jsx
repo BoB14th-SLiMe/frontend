@@ -2,17 +2,21 @@ import React from 'react';
 import DashboardBlock from '../DashboardBlock';
 import { Stack, Box, Typography, Chip } from '@mui/material'; 
 
-// ⭐️ event가 null일 때(초기 상태) 표시할 기본값
-const defaultEvent = {
-    id: 0,
-    severityColor: 'default'
-};
-
-// ⭐️ event prop을 받도록 수정
 export default function DetailReport({ event, children }) {
+  const titleElement = (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+      <Typography variant="h6" fontWeight="bold">
+        상세 보고서
+      </Typography>
+      {event && (
+        <Chip label={`index: ${event.id}`} color="primary" size="small" />
+      )}
+    </Box>
+  );
+
   return (
     <DashboardBlock 
-      title={event ? `상세 보고서 #${event.id}` : '상세 보고서'} 
+      title={titleElement}
       sx={{ flex: 2, height: '100%' }}
     >
             {/* 자식 컴포넌트(ReportDetails, AnalysisContent)가 여기에 배치됨 */}

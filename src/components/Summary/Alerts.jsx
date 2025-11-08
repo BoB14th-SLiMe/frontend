@@ -15,10 +15,10 @@ const AlertItem = ({ time, message, status, risk, onConfirm }) => {
         iconColor = '#ef5350'; 
         riskComponent = ( 
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Typography variant="h6" color="text.secondary" sx={{ mr: 1 }}>
+                <Typography variant="body1" color="text.secondary" sx={{ mr: 1 }}>
                     예상 위험도:
                 </Typography>
-                <Typography variant="h6" fontWeight="bold" color="#ef5350">
+                <Typography variant="body1" fontWeight="bold" color="#ef5350">
                     {risk}
                 </Typography>
             </Box>
@@ -92,9 +92,9 @@ const AlertItem = ({ time, message, status, risk, onConfirm }) => {
 
 // 2. 가상 알림 데이터 (RiskPage의 sampleData와 ID/내용 일치)
 const mockAlerts = [
-    { time: '17:20:15', message: '비정상 Modbus 쓰기', status: 'analyzing', risk: '91%', id: 5 },
-    { time: '17:16:04', message: '명령 시퀀스 이상', status: 'report_yellow', id: 4 },
-    { time: '16:45:10', message: '리플레이 공격', status: 'report_red', id: 3 },
+    { time: '17:20:15', message: '이상 탐지 후 분석 중...', status: 'analyzing', risk: '91%', id: 5 },
+    { time: '17:16:04', message: 'SLM 보고서 작성 완료', status: 'report_yellow', id: 4 },
+    { time: '16:45:10', message: 'SLM 보고서 작성 완료', status: 'report_red', id: 3 },
     { time: '13:20:56', message: '이상 행위 조치 완료', status: 'completed', id: 2 },
     { time: '13:20:55', message: '이상 행위 조치 완료', status: 'completed', id: 1 },
 ];
@@ -104,7 +104,7 @@ const mockAlerts = [
 // ⭐️ onAlertConfirm prop을 부모(SummaryPage)로부터 받음
 export default function Alerts({ onAlertConfirm }) {
   return (
-    <DashboardBlock title="최신 알림" sx={{ height: '100%', flex: 5 }}>
+    <DashboardBlock title="이상 탐지 및 알람" sx={{ height: '100%', flex: 5 }}>
             <Box sx={{ mt: 0, '& > div:not(:last-child)': { borderBottom: '1px solid #eee' }, pb: 1 }}> 
                 {mockAlerts.map((alert, index) => (
                     <AlertItem

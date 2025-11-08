@@ -211,7 +211,7 @@ const StatCard = ({ icon: Icon, number, title, color }) => (
         color: '#555',
         fontSize: '1.1rem', //16px
         fontWeight: 500,
-        borderRadius: 1.5,
+        borderRadius: 4,
         px: 1.5,
         py: 0.5,
         textTransform: 'none',

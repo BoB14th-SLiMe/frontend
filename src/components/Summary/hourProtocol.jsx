@@ -3,6 +3,7 @@ import DashboardBlock from '../DashboardBlock';
 import ReactECharts from 'echarts-for-react';
 
 const pieOptions = {
+    animation: false,
     tooltip: {
         trigger: 'item',
         formatter: '{b} : {c} ({d}%)', 
@@ -18,7 +19,7 @@ const pieOptions = {
         {
             type: 'pie',
             radius: '65%', 
-            center: ['50%', '40%'], 
+            center: ['50%', '35%'], 
             data: [
                 { value: 750, name: 'Modbus', itemStyle: { color: '#A0E7E5' } },
                 { value: 80, name: 'TCP', itemStyle: { color: '#F08080' } },

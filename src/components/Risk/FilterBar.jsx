@@ -60,28 +60,12 @@ export default function FilterBar({
           <Typography variant="body2" color="text.secondary" gutterBottom>
             심각도
           </Typography>
-          <Select
-            value={severity}
-            onChange={(e) => onFilterChange('severity', e.target.value)}
-            displayEmpty
-            sx={selectStyle}
-          >
-            <MenuItem value="all">전체</MenuItem>
-            <MenuItem value="경고">경고</MenuItem>
-            <MenuItem value="긴급">긴급</MenuItem>
-          </Select>
-        </FormControl>
-
-        <FormControl sx={{ flex: 1 }}>
-          <Typography variant="body2" color="text.secondary" gutterBottom>
-            처리 상태
-          </Typography>
           <ToggleButtonGroup
-            value={status}
+            value={severity}
             exclusive
             onChange={(e, newValue) => {
               if (newValue !== null) {
-                onFilterChange('status', newValue);
+                onFilterChange('severity', newValue);
               }
             }}
             size="small"
@@ -89,6 +73,25 @@ export default function FilterBar({
               height: 35,
               '& .MuiToggleButton-root': {
                 flex: 1,
+                textTransform: 'none',
+                border: '1px solid #e0e0e0',
+              }
+            }}
+          >
+            <ToggleButton value="all">전체</ToggleButton>
+            <ToggleButton value="경고">경고</ToggleButton>
+            <ToggleButton value="긴급">긴급</ToggleButton>
+          </ToggleButtonGroup>
+        </FormControl>
+
+        <FormControl sx={{ flex: 1 }}>
+          <Typography variant="body2" color="text.secondary" gutterBottom>
+            처리 상태
+          </Typography>
+          <ToggleButtonGroup
+            sx={{
+              height: 35,
+              '& .MuiToggleButton-root': {
                 textTransform: 'none',
                 border: '1px solid #e0e0e0',
               }
@@ -133,7 +136,7 @@ export default function FilterBar({
           </Box>
         </LocalizationProvider>
 
-        <Box sx={{ flex: 1.5 }}>
+        <Box sx={{ flex: 1.2 }}>
           <Typography variant="body2" color="text.secondary" gutterBottom>
             검색
           </Typography>

@@ -116,6 +116,7 @@ const RealtimeThreatChart = () => {
 
         // ECharts 옵션
         const option = {
+            animation: false,
             grid: {
                 left: '3%',
                 right: '4%',

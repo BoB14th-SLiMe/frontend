@@ -34,7 +34,7 @@ const PAGE_LAYOUT = {
   },
   // 오른쪽 영역의 상세 보고서와 관리자 사후조치 높이 비율
   rightColumn: {
-    detailReport: 1.55,
+    detailReport: 1.75,
     adminAction: 1,
   },
 };

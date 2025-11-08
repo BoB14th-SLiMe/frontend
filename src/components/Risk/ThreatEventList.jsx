@@ -104,8 +104,7 @@ const stableSort = (array, comparator) => {
 
 export default function ThreatEventTable({ width, height, data = [], onEventSelect }) {
 
-  const [sortBy, setSortBy] = useState('id');
-  const [sortOrder, setSortOrder] = useState('desc');
+  const [sortConfig, setSortConfig] = useState('id_desc'); // Default: Index Desc
   const [statusValues, setStatusValues] = useState({});
 
   // ⭐️ [수정] 데이터가 변경될 때 (필터링 등) 기존 상태값과 병합
@@ -134,12 +133,13 @@ export default function ThreatEventTable({ width, height, data = [], onEventSele
   };
 
   const sortedData = useMemo(() => {
+    const [sortBy, sortOrder] = sortConfig.split('_');
     const sorted = stableSort(data, createComparator(sortOrder, sortBy));
     console.log('🔍 ThreatEventTable 받은 데이터:', data.length, '개');
     console.log('🔍 정렬 후 데이터:', sorted.length, '개');
     console.log('🔍 정렬 후 ID 목록:', sorted.map(d => d.id));
     return sorted;
-  }, [data, sortOrder, sortBy]);
+  }, [data, sortConfig]);
 
 
 
@@ -149,31 +149,16 @@ export default function ThreatEventTable({ width, height, data = [], onEventSele
         정렬 기준:
       </Typography>
       <Select
-        value={sortBy}
-        onChange={(e) => {
-          setSortBy(e.target.value);
-          setSortOrder('desc');
-        }}
+        value={sortConfig}
+        onChange={(e) => setSortConfig(e.target.value)}
         size="small"
-        sx={{ minWidth: 120, height: 32 }}
+        sx={{ minWidth: 200, height: 32 }} // Increased width
       >
-        <MenuItem value="severity">위험도별 정렬</MenuItem>
-        <MenuItem value="id">Index별 정렬</MenuItem>
+        <MenuItem value="id_asc">Index별 정렬 오름차순</MenuItem>
+        <MenuItem value="id_desc">Index별 정렬 내림차순</MenuItem>
+        <MenuItem value="severity_asc">위험도별 정렬 오름차순</MenuItem>
+        <MenuItem value="severity_desc">위험도별 정렬 내림차순</MenuItem>
       </Select>
-      <IconButton
-        onClick={() => setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'))}
-        size="small"
-        sx={{
-          border: '1px solid #e0e0e0',
-          borderRadius: 1,
-          p: 0.5,
-          color: '#007bff',
-          '&:hover': { bgcolor: '#e3f2fd' },
-        }}
-        title={sortOrder === 'desc' ? '역순 정렬' : '정순 정렬'}
-      >
-        {sortOrder === 'desc' ? <ArrowDownward fontSize="small" /> : <ArrowUpward fontSize="small" />}
-      </IconButton>
     </Box>
   );
 

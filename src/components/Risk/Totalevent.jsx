@@ -17,6 +17,7 @@ const tableData = [
 
 export default function ThreatGradeIncidence() {
     const option = {
+        animation: false,
         grid: {
             left: 60,
             right: 30,

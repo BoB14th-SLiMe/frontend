@@ -74,7 +74,7 @@ export const DEFAULT_BANNER_ITEMS = [
     order: 4,
     width: 130,
     config: {
-      icon: 'NotificationsNoneOutlinedIcon', // ⭐️ 아이콘 이름도 이미지에 맞게 수정
+      icon: 'AccessTimeIcon', // ⭐️ 아이콘 이름도 이미지에 맞게 수정
       number: 3,
       title: 'MTTR(ms)', // ⭐️ 텍스트 수정
       color: COMMON_STAT_COLOR // ⭐️ 공통 색상 적용

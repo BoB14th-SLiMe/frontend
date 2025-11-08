@@ -30,6 +30,7 @@ const percentData = {
 
 // ECharts 옵션 객체 정의
 const trendOptions = {
+    animation: false,
     // 툴팁 설정
     tooltip: {
         trigger: 'axis',
@@ -54,7 +55,7 @@ const trendOptions = {
     legend: {
         data: ['Modbus', 'TCP', 'UDP', 'LLDP'],
         orient: 'horizontal',
-        bottom: 25,
+        bottom: 20,
         itemWidth: 14, 
         itemHeight: 14,
     },
@@ -77,10 +78,10 @@ const trendOptions = {
     // 그래프의 여백 조정
     grid: {
         // ⭐️ 5. 상단 여백을 조정하여 제목 아래로 당기고 8000 레이블(이제 100%)을 보이게 함
-        top: '5%', 
+        top: '2.5%', 
         left: '3%',
         right: '15%', 
-        bottom: '20%',
+        bottom: '22%',
         containLabel: true 
     },
     

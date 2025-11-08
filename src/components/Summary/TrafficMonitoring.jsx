@@ -136,6 +136,7 @@ const TrafficMonitoring = () => {
     ];
 
     const option = {
+      animation: false,
       legend: {
         data: legendData, // ⭐️ 고정
         right: 10,

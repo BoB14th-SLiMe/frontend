@@ -19,6 +19,11 @@ const queryClient = new QueryClient();
 // ⭐️ 전역 테마 생성 (버튼 모서리 둥글게)
 const theme = createTheme({
   components: {
+    MuiButtonBase: {
+      defaultProps: {
+        disableRipple: true, // Ripple effect (클릭 시 물결 효과) 비활성화
+      },
+    },
     MuiButton: {
       styleOverrides: {
         root: {
