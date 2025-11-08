@@ -10,10 +10,11 @@ export const useBannerConfig = () => {
   return context;
 };
 
-// ⭐️ 1. 통계(stat) 아이템을 위한 공통 색상 변수
-// 이 값만 수정하면 모든 stat 아이템의 색상이 변경됩니다.
-const COMMON_STAT_COLOR = '#12528bff'; // MUI 기본 파란색 (원하는 색상으로 변경 가능)
+// ⭐️ API 베이스 URL
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
+// ⭐️ 통계 아이템을 위한 공통 색상
+const COMMON_STAT_COLOR = '#12528bff';
 
 // 기본 배너 아이템 설정
 export const DEFAULT_BANNER_ITEMS = [
@@ -24,7 +25,7 @@ export const DEFAULT_BANNER_ITEMS = [
     order: 0,
     width: 180,
     config: {
-      score: 24,
+      score: 0,
       title: '위협 점수'
     }
   },
@@ -35,10 +36,10 @@ export const DEFAULT_BANNER_ITEMS = [
     order: 1,
     width: 130,
     config: {
-      icon: 'PriorityHighOutlinedIcon', // ⭐️ 아이콘 이름도 이미지에 맞게 수정
-      number: 5,
+      icon: 'PriorityHighOutlinedIcon',
+      number: 0,
       title: '이상탐지(Day)',
-      color: COMMON_STAT_COLOR // ⭐️ 공통 색상 적용
+      color: COMMON_STAT_COLOR
     }
   },
   {
@@ -48,10 +49,10 @@ export const DEFAULT_BANNER_ITEMS = [
     order: 2,
     width: 130,
     config: {
-      icon: 'BarChartOutlinedIcon', // ⭐️ 아이콘 이름도 이미지에 맞게 수정
-      number: 7,
+      icon: 'BarChartOutlinedIcon',
+      number: 0,
       title: '이상탐지(Week)',
-      color: COMMON_STAT_COLOR // ⭐️ 공통 색상 적용
+      color: COMMON_STAT_COLOR
     }
   },
   {
@@ -61,13 +62,12 @@ export const DEFAULT_BANNER_ITEMS = [
     order: 3,
     width: 130,
     config: {
-      icon: 'WifiOutlinedIcon', // ⭐️ 아이콘 이름도 이미지에 맞게 수정
+      icon: 'WifiOutlinedIcon',
       number: 0,
       title: '새롭게 탐지된 IP',
-      color: COMMON_STAT_COLOR // ⭐️ 공통 색상 적용
+      color: COMMON_STAT_COLOR
     }
   },
-  
   {
     id: 'unconfirmed_terminal',
     type: 'stat',
@@ -75,10 +75,10 @@ export const DEFAULT_BANNER_ITEMS = [
     order: 5,
     width: 130,
     config: {
-      icon: 'CheckCircleOutlineOutlinedIcon', // ⭐️ 아이콘 이름도 이미지에 맞게 수정
-      number: 1,
-      title: '미확인 알람', // ⭐️ 텍스트 수정
-      color: COMMON_STAT_COLOR // ⭐️ 공통 색상 적용
+      icon: 'CheckCircleOutlineOutlinedIcon',
+      number: 0,
+      title: '미확인 알람',
+      color: COMMON_STAT_COLOR
     }
   },
   {
@@ -88,10 +88,10 @@ export const DEFAULT_BANNER_ITEMS = [
     order: 6,
     width: 130,
     config: {
-      icon: 'NotificationsNoneOutlinedIcon', // ⭐️ 아이콘 이름도 이미지에 맞게 수정
-      number: 3,
+      icon: 'NotificationsNoneOutlinedIcon',
+      number: 0,
       title: '긴급 알람',
-      color: COMMON_STAT_COLOR // ⭐️ 공통 색상 적용
+      color: COMMON_STAT_COLOR
     }
   },
   {
@@ -102,8 +102,8 @@ export const DEFAULT_BANNER_ITEMS = [
     width: 130,
     config: {
       title: 'CPU 사용량',
-      value: 25,
-      color: 'primary' // ⭐️ 'usage' 타입은 그대로 둠
+      value: 0,
+      color: 'primary'
     }
   },
   {
@@ -114,8 +114,8 @@ export const DEFAULT_BANNER_ITEMS = [
     width: 130,
     config: {
       title: 'RAM 사용량',
-      value: 67,
-      color: 'success' // ⭐️ 'usage' 타입은 그대로 둠
+      value: 0,
+      color: 'success'
     }
   },
   {
@@ -126,8 +126,8 @@ export const DEFAULT_BANNER_ITEMS = [
     width: 130,
     config: {
       title: 'GPU 사용량',
-      value: 33,
-      color: 'error' // ⭐️ 'usage' 타입은 그대로 둠
+      value: 0,
+      color: 'error'
     }
   }
 ];
@@ -145,6 +145,120 @@ export const BannerConfigProvider = ({ children }) => {
     }
     return DEFAULT_BANNER_ITEMS;
   });
+
+  // ⭐️ 백엔드에서 초기 데이터 로드
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/frontend/banner/stats`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        
+        // 백엔드 데이터로 상태 업데이트
+        if (data.threat_score) {
+          updateItemData('threat_score', { score: data.threat_score.score });
+        }
+        if (data.anomaly_day) {
+          updateItemData('anomaly_day', { number: data.anomaly_day.number });
+        }
+        if (data.anomaly_week) {
+          updateItemData('anomaly_week', { number: data.anomaly_week.number });
+        }
+        if (data.new_ip) {
+          updateItemData('new_ip', { number: data.new_ip.number });
+        }
+        if (data.unconfirmed_terminal) {
+          updateItemData('unconfirmed_terminal', { number: data.unconfirmed_terminal.number });
+        }
+        if (data.critical_alert) {
+          updateItemData('critical_alert', { number: data.critical_alert.number });
+        }
+        if (data.cpu) {
+          updateItemData('cpu', { value: data.cpu.value });
+        }
+        if (data.ram) {
+          updateItemData('ram', { value: data.ram.value });
+        }
+        if (data.gpu) {
+          updateItemData('gpu', { value: data.gpu.value });
+        }
+        
+        console.log('✅ 배너 통계 데이터 로드 완료');
+      } catch (error) {
+        console.error('❌ 배너 통계 로드 실패:', error);
+        // 실패 시 Mock 데이터 유지
+      }
+    };
+
+    fetchInitialData();
+  }, []);
+
+  // ⭐️ SSE로 실시간 업데이트 구독
+  useEffect(() => {
+    let eventSource = null;
+
+    const connectSSE = () => {
+      try {
+        eventSource = new EventSource(`${API_BASE_URL}/sse/stats`);
+        
+        eventSource.addEventListener('connect', (event) => {
+          console.log('✅ SSE 연결 성공:', event.data);
+        });
+
+        eventSource.addEventListener('stats', (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            console.log('📊 실시간 통계 업데이트:', data);
+            
+            // 실시간 데이터로 업데이트
+            if (data.recentThreats !== undefined) {
+              updateItemData('anomaly_day', { number: data.recentThreats });
+            }
+            if (data.totalThreats !== undefined) {
+              updateItemData('anomaly_week', { number: data.totalThreats });
+            }
+            
+            // 위협 점수 계산 (예시)
+            const threatScore = Math.min(100, Math.floor(data.recentThreats * 2));
+            updateItemData('threat_score', { score: threatScore });
+            
+          } catch (err) {
+            console.error('SSE 데이터 파싱 실패:', err);
+          }
+        });
+
+        eventSource.addEventListener('heartbeat', (event) => {
+          console.log('💓 Heartbeat:', event.data);
+        });
+
+        eventSource.onerror = (error) => {
+          console.error('❌ SSE 연결 오류:', error);
+          eventSource.close();
+          
+          // 5초 후 재연결 시도
+          setTimeout(() => {
+            console.log('🔄 SSE 재연결 시도...');
+            connectSSE();
+          }, 5000);
+        };
+      } catch (error) {
+        console.error('SSE 연결 실패:', error);
+      }
+    };
+
+    // SSE 연결 시작
+    connectSSE();
+
+    // 컴포넌트 언마운트 시 SSE 연결 종료
+    return () => {
+      if (eventSource) {
+        console.log('🔌 SSE 연결 종료');
+        eventSource.close();
+      }
+    };
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('bannerConfig', JSON.stringify(bannerItems));
