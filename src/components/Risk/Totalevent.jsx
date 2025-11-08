@@ -10,9 +10,9 @@ const barData = [
 ];
 
 const tableData = [
-    { ip: '192.168.0.101', count: 30 },
-    { ip: '192.168.0.103', count: 10 },
-    { ip: '192.168.0.106', count: 5 },
+    { ip: 'PLC-001', count: 30 },
+    { ip: 'PLC-002', count: 10 },
+    { ip: 'PLC-003', count: 5 },
 ];
 
 export default function ThreatGradeIncidence() {
@@ -91,7 +91,7 @@ export default function ThreatGradeIncidence() {
                         color: '#333',
                         mb: 0.5
                     }}>
-                        공격 목적지 자산
+                        목적지 자산
                     </Typography>
                     
                     <Box sx={{ display: 'flex', mb: 1.5, pb: 0.1, borderBottom: '1px solid #f0f0f0' }}>
@@ -101,7 +101,7 @@ export default function ThreatGradeIncidence() {
                             color: '#999',
                             fontWeight: 500
                         }}>
-                            자산 IP
+                            목적지
                         </Typography>
                         <Typography sx={{ 
                             width: 80,

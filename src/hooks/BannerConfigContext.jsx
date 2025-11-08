@@ -67,19 +67,7 @@ export const DEFAULT_BANNER_ITEMS = [
       color: COMMON_STAT_COLOR // ⭐️ 공통 색상 적용
     }
   },
-    {
-    id: 'response_time', // ⭐️ 이미지 순서에 맞게 조정 (평균 지연 시간)
-    type: 'stat',
-    enabled: true,
-    order: 4,
-    width: 130,
-    config: {
-      icon: 'AccessTimeIcon', // ⭐️ 아이콘 이름도 이미지에 맞게 수정
-      number: 3,
-      title: 'MTTR(ms)', // ⭐️ 텍스트 수정
-      color: COMMON_STAT_COLOR // ⭐️ 공통 색상 적용
-    }
-  },
+  
   {
     id: 'unconfirmed_terminal',
     type: 'stat',

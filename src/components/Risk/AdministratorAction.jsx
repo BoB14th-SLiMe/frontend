@@ -29,7 +29,7 @@ const DashboardBlock = ({ title, controls, sx, children }) => (
     }}
   >
     <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-      <Typography variant="h6" fontWeight="bold" sx={{ fontSize: 16 }}>
+      <Typography variant="h6" fontWeight="bold">
         {title}
       </Typography>
       {controls && <Box sx={{ ml: 1 }}>{controls}</Box>}

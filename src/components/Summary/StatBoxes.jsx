@@ -211,7 +211,7 @@ const StatCard = ({ icon: Icon, number, title, color }) => (
         color: '#555',
         fontSize: '1.1rem', //16px
         fontWeight: 500,
-        borderRadius: 4,
+        borderRadius: 1.5,
         px: 1.5,
         py: 0.5,
         textTransform: 'none',
@@ -323,6 +323,7 @@ export default function StatBoxes() {
     WifiOutlinedIcon, // '새롭게 탐지된 IP' 용
     NotificationsNoneOutlinedIcon, // '평균 지연 시간', '긴급 알람' 용
     CheckCircleOutlineOutlinedIcon, // '미확인 알람' 용
+    AccessTimeIcon,
   };
 
   // 1. 타입별로 아이템 분리
