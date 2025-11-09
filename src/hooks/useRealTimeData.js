@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { createSSEConnection } from '../services/apiService';
+import { createSSEConnection } from '../service/apiService';
 
 /**
  * SSE를 통한 실시간 데이터 수신 훅

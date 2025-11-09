@@ -15,7 +15,7 @@ import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import { useBannerConfig } from '../../hooks/BannerConfigContext';
-import { settingsApi } from '../../services/apiService';
+import { settingsApi } from '../../service/apiService';
 import {
   DndContext,
   closestCenter,

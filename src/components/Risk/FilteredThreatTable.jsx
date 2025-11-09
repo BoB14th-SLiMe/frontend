@@ -4,7 +4,7 @@ import dayjs from 'dayjs';
 
 import FilterBar from './FilterBar';
 import ThreatEventTable from './ThreatEventList';
-import { threatApi } from '../../services/apiService';
+import { threatApi } from '../../service/apiService';
 
 const initialFilters = {
   severity: 'all',

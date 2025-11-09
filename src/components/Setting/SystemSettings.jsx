@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Typography, Select, MenuItem, Slider, TextField, Button, Box, Alert, CircularProgress } from '@mui/material';
 import DashboardBlock from '../DashboardBlock';
-import { settingsApi } from '../../services/apiService';
+import { settingsApi } from '../../service/apiService';
 
 const SystemSettings = () => {
   const [refreshRate, setRefreshRate] = useState(30);

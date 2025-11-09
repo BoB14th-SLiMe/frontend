@@ -18,7 +18,7 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/ko';
 
 import DashboardBlock from '../DashboardBlock';
-import { threatApi } from '../../services/apiService';
+import { threatApi } from '../../service/apiService';
 
 const smallInputStyle = {
   '& .MuiInputBase-root': {

@@ -13,7 +13,7 @@ import AdministratorAction from '../components/Risk/AdministratorAction';
 import AnalysisContent from '../components/Risk/AnalysisContent';
 
 // API
-import { threatApi } from '../services/apiService';
+import { threatApi } from '../service/apiService';
 
 const SPACING = 1.25;
 

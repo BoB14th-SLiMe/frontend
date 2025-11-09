@@ -25,10 +25,12 @@
     "dayjs": "^1.11.18",
     "echarts": "^5.6.0",
     "echarts-for-react": "^3.0.2",
+    "eventsource-polyfill": "^0.9.6",
     "react": "^19.1.1",
     "react-chartjs-2": "^5.3.1",
     "react-dom": "^19.1.1",
-    "react-router-dom": "^7.9.4"
+    "react-router-dom": "^7.9.4",
+    "reconnecting-eventsource": "^1.6.4"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",

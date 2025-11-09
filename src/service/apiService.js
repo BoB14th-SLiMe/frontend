@@ -1,5 +1,6 @@
-// src/services/apiService.js
+// src/service/apiService.js
 import axios from 'axios';
+import ReconnectingEventSource from 'reconnecting-eventsource';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
@@ -119,7 +120,12 @@ export const packetApi = {
 // SSE (Server-Sent Events)
 // ============================================
 export const createSSEConnection = (endpoint, handlers) => {
-  const eventSource = new EventSource(`${API_BASE_URL}/sse/${endpoint}`);
+  const eventSource = new ReconnectingEventSource(`${API_BASE_URL}/sse/${endpoint}`, {
+    withCredentials: false,
+    max_retry_time: 15000,
+    max_retry_count: Infinity,
+    min_retry_time: 1000,
+  });
   
   // 연결 이벤트
   eventSource.addEventListener('connect', (event) => {
