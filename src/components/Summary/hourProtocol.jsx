@@ -1,6 +1,7 @@
 import React from 'react';
 import DashboardBlock from '../DashboardBlock'; 
 import ReactECharts from 'echarts-for-react';
+import { COMPONENT_COLORS, getColorByIndex } from '../../theme';
 
 const pieOptions = {
     animation: false,
@@ -21,10 +22,10 @@ const pieOptions = {
             radius: '65%', 
             center: ['50%', '35%'], 
             data: [
-                { value: 750, name: 'Modbus', itemStyle: { color: '#A0E7E5' } },
-                { value: 80, name: 'TCP', itemStyle: { color: '#F08080' } },
-                { value: 40, name: 'UDP', itemStyle: { color: '#F7DC6F' } },
-                { value: 130, name: 'LLDP', itemStyle: { color: '#F5CBA7' } },
+                { value: 750, name: 'Modbus', itemStyle: { color: getColorByIndex(COMPONENT_COLORS.protocol, 0) } },
+                { value: 80, name: 'TCP', itemStyle: { color: getColorByIndex(COMPONENT_COLORS.protocol, 1) } },
+                { value: 40, name: 'UDP', itemStyle: { color: getColorByIndex(COMPONENT_COLORS.protocol, 2) } },
+                { value: 130, name: 'LLDP', itemStyle: { color: getColorByIndex(COMPONENT_COLORS.protocol, 3) } },
             ],
             label: {
                 show: false,

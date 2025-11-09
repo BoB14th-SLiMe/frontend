@@ -1,96 +1,109 @@
-// src/components/TrafficMonitoring.jsx
-
 import React, { useState, useEffect, useRef } from 'react';
-import {
-  Box,
-  // ⭐️ 토글 버튼 관련 임포트 제거
-  useTheme,
-} from '@mui/material';
+import { Box, useTheme, Select, MenuItem } from '@mui/material';
 import * as echarts from 'echarts';
 import DashboardBlock from '../DashboardBlock';
+import { useTimeRange } from '../../hooks/TimeRangeContext';
+import { COMPONENT_COLORS } from '../../theme';
 
-// --- Mock 데이터 생성 함수 ---
-
-/** 1. 현재 트래픽 데이터 생성 (24시간 고정) */
-const generateCurrentData = () => {
-  const data = [];
+const generateData = (timeRange) => {
   const now = new Date();
-  const hours = 24; // 24시간 고정
+  const data = { current: [], average: [], labels: [] };
+  
+  let points;
+  let interval; // in minutes
 
-  for (let i = hours - 1; i >= 0; i--) {
-    const time = new Date(now.getTime() - i * 60 * 60 * 1000);
-    const hour = time.getHours();
-    let baseValue = 20 + Math.random() * 10; 
-    let isAttack = false;
-
-    if (hour >= 9 && hour <= 11) {
-      baseValue += Math.random() * 15;
-    }
-
-    if (Math.random() < 0.05) { 
-      baseValue += 20 + Math.random() * 10; 
-      isAttack = true;
-    }
-
-    data.push({
-      time: time,
-      value: Math.round(baseValue),
-      isAttack: isAttack, 
-    });
+  switch (timeRange) {
+    case '1h':
+      points = 60;
+      interval = 1;
+      break;
+    case '6h':
+      points = 360;
+      interval = 1;
+      break;
+    case '24h':
+      points = 24;
+      interval = 60;
+      break;
+    case '7d':
+      points = 7 * 24;
+      interval = 60;
+      break;
+    default:
+      points = 24;
+      interval = 60;
   }
+
+  for (let i = points - 1; i >= 0; i--) {
+    const time = new Date(now.getTime() - i * interval * 60 * 1000);
+    const hour = time.getHours();
+    const day = time.getDay();
+
+    // Current Traffic
+    let currentBase = 20 + Math.random() * 10;
+    if (hour >= 9 && hour <= 11) currentBase += Math.random() * 15;
+    let isAttack = Math.random() < 0.05;
+    if (isAttack) currentBase += 20 + Math.random() * 10;
+    data.current.push({
+      time: time,
+      value: Math.round(currentBase),
+      isAttack: isAttack,
+    });
+
+    // Average Traffic
+    let avgBase = (day === 0 || day === 6) ? 15 : 20; // Weekend vs Weekday
+    if (hour >= 9 && hour <= 11) avgBase += 5;
+    data.average.push({
+      time: time,
+      value: Math.round(avgBase + (Math.random() - 0.5) * 2),
+    });
+
+    // Labels
+    if (timeRange === '1h' || timeRange === '6h') {
+        if (i % (Math.floor(points/6)) === 0) {
+             data.labels.push(`${hour.toString().padStart(2, '0')}:${time.getMinutes().toString().padStart(2, '0')}`);
+        } else {
+            data.labels.push('');
+        }
+    }
+    else if (timeRange === '24h') {
+      if (i % 2 === 0) {
+        data.labels.push(hour.toString().padStart(2, '0') + '시');
+      } else {
+        data.labels.push('');
+      }
+    } else { // 7d
+       if (i % 24 === 0) {
+         data.labels.push(`${time.getMonth() + 1}/${time.getDate()}`);
+       } else {
+         data.labels.push('');
+       }
+    }
+  }
+    if (timeRange === '7d') {
+        data.labels[data.labels.length -1] = 'Today';
+    }
+
+
   return data;
 };
 
-/** 2. 7일 평균 데이터 생성 (24시간 고정) */
-const generateAverageData = () => {
-  const data = [];
-  const now = new Date();
-  const hours = 24; 
 
-  for (let i = hours - 1; i >= 0; i--) {
-    const time = new Date(now.getTime() - i * 60 * 60 * 1000);
-    const hour = time.getHours();
-    let baseValue = 20; 
-
-    if (hour >= 9 && hour <= 11) {
-      baseValue += 5;
-    }
-
-    data.push({
-      time: time,
-      value: Math.round(baseValue + (Math.random() - 0.5) * 2), 
-    });
-  }
-  return data;
-};
-
-
-/** 3. 메인 컴포넌트 */
-const TrafficMonitoring = () => {
-  const theme = useTheme(); 
+const TrafficMonitoring = ({ title = "트래픽 모니터링", showControls = true, isEmbedded = false }) => {
+  const theme = useTheme();
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
-  // ⭐️ timeRange 상태 제거
-  // const [timeRange, setTimeRange] = useState('24h'); 
+  const { trafficTimeRange, setTrafficTimeRange } = useTimeRange();
   const [chartData, setChartData] = useState({ current: [], average: [], labels: [] });
 
-  const attackBarColor = theme.palette.error.main || '#d32f2f'; 
-  const avgLineColor = theme.palette.success.main || '#2e7d32'; 
+  const attackBarColor = COMPONENT_COLORS.traffic.attack;
+  const avgLineColor = COMPONENT_COLORS.traffic.average;
 
-  // 1. timeRange가 변경될 때마다 MOCK 데이터 재생성
   useEffect(() => {
-    // ⭐️ 24시간 고정 데이터로 생성
-    const current = generateCurrentData();
-    const average = generateAverageData(); 
+    const data = generateData(trafficTimeRange);
+    setChartData(data);
+  }, [trafficTimeRange]);
 
-    const labels = current.map((d, index) => {
-      return d.time.getHours().toString().padStart(2, '0') + '시'; 
-    });
-
-    setChartData({ current, average, labels });
-  }, []); // ⭐️ 의존성 배열을 비워 마운트 시 1회만 실행
-
-  // 2. ECharts 초기화 및 데이터 업데이트
   useEffect(() => {
     if (!chartRef.current || chartData.labels.length === 0) return;
 
@@ -98,23 +111,20 @@ const TrafficMonitoring = () => {
       chartInstance.current = echarts.init(chartRef.current);
     }
 
-    const defaultBarColor = '#e0e0e0';
-
-    // ⭐️ 범례 고정
+    const defaultBarColor = COMPONENT_COLORS.traffic.current;
     const legendData = ['현재 트래픽', '7일 평균'];
 
-    // ⭐️ 시리즈 고정
     const series = [
       {
         name: '현재 트래픽',
         type: 'bar',
-        large: true, 
+        large: true,
         barWidth: '70%',
         data: chartData.current.map(d => ({
           value: d.value,
           itemStyle: {
             color: d.isAttack ? attackBarColor : defaultBarColor,
-            borderRadius: [2, 2, 0, 0] 
+            borderRadius: [2, 2, 0, 0]
           }
         })),
       },
@@ -122,8 +132,7 @@ const TrafficMonitoring = () => {
         name: '7일 평균',
         type: 'line',
         smooth: true,
-        showSymbol: true, 
-        symbolSize: 5,     
+        showSymbol: false,
         data: chartData.average.map(d => d.value),
         lineStyle: {
           color: avgLineColor,
@@ -136,22 +145,20 @@ const TrafficMonitoring = () => {
     ];
 
     const option = {
-      animation: false,
+        animation: false,
       legend: {
-        data: legendData, // ⭐️ 고정
+        data: legendData,
         right: 10,
         top: 0,
         itemWidth: 10,
         itemHeight: 10,
-        textStyle: {
-          color: '#333'
-        }
+        textStyle: { color: '#333' }
       },
       grid: {
         left: '3%',
         right: '4%',
         bottom: '8%',
-        top: '18%', 
+        top: '18%',
         containLabel: true,
       },
       xAxis: {
@@ -159,20 +166,19 @@ const TrafficMonitoring = () => {
         data: chartData.labels,
         axisLine: { show: false },
         axisTick: { show: false },
-        axisLabel: { color: '#666', fontSize: 11 },
-        splitLine: { show: false } 
+        axisLabel: { color: '#666', fontSize: 11, interval: 'auto' },
+        splitLine: { show: false }
       },
       yAxis: {
         type: 'value',
         min: 0,
-        interval: 10, 
         axisLine: { show: false },
         axisTick: { show: false },
         axisLabel: { color: '#666', fontSize: 11 },
         splitLine: {
           show: true,
           lineStyle: {
-            color: 'rgba(0, 0, 0, 0.05)', 
+            color: 'rgba(0, 0, 0, 0.05)',
             type: 'solid',
           },
         },
@@ -182,20 +188,16 @@ const TrafficMonitoring = () => {
         backgroundColor: 'rgba(0, 0, 0, 0.8)',
         borderColor: '#333',
         textStyle: { color: '#fff' },
-        axisPointer: {
-          type: 'shadow', 
-        },
+        axisPointer: { type: 'shadow' },
         formatter: (params) => {
           const dataIndex = params[0].dataIndex;
-          if (!chartData.current[dataIndex]) return; 
+          if (!chartData.current[dataIndex]) return '';
           
           const time = chartData.current[dataIndex].time;
           const isAttack = chartData.current[dataIndex].isAttack;
-
-          const timeStr = `${time.getMonth() + 1}/${time.getDate()} ${time.getHours().toString().padStart(2, '0')}:00`;
+          const timeStr = `${time.getMonth() + 1}/${time.getDate()} ${time.getHours().toString().padStart(2, '0')}:${time.getMinutes().toString().padStart(2, '0')}`;
           
           let tooltip = `${timeStr}<br/>`;
-
           params.forEach(param => {
             tooltip += `${param.marker} ${param.seriesName}: ${param.value} Mbps`;
             if (param.seriesName === '현재 트래픽' && isAttack) {
@@ -203,47 +205,64 @@ const TrafficMonitoring = () => {
             }
             tooltip += `<br/>`;
           });
-          
-          return tooltip.slice(0, -5); 
+          return tooltip.slice(0, -5);
         },
       },
-      series: series, // ⭐️ 고정
+      series: series,
     };
 
-    chartInstance.current.setOption(option, true); 
+    chartInstance.current.setOption(option, true);
 
-    const handleResize = () => {
-      chartInstance.current?.resize();
-    };
+    const handleResize = () => chartInstance.current?.resize();
     window.addEventListener('resize', handleResize);
 
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  }, [chartData, theme, attackBarColor, avgLineColor]); // ⭐️ timeRange 의존성 제거
+    return () => window.removeEventListener('resize', handleResize);
+  }, [chartData, theme, attackBarColor, avgLineColor, trafficTimeRange]);
 
-  // 컴포넌트 언마운트 시 차트 정리
   useEffect(() => {
-    return () => {
-      chartInstance.current?.dispose();
-    };
+    return () => chartInstance.current?.dispose();
   }, []);
 
-  // ⭐️ 토글 버튼 변수(toggleButtons) 제거
+  const timeRangeSelector = showControls ? (
+    <Select
+        value={trafficTimeRange}
+        onChange={(e) => setTrafficTimeRange(e.target.value)}
+        size="small"
+        sx={{
+            fontSize: '0.8rem',
+            height: 28,
+            '& .MuiSelect-select': { py: 0.2 },
+        }}
+    >
+        <MenuItem value={'1h'}>1시간</MenuItem>
+        <MenuItem value={'6h'}>6시간</MenuItem>
+        <MenuItem value={'24h'}>24시간</MenuItem>
+        <MenuItem value={'7d'}>7일</MenuItem>
+    </Select>
+  ) : null;
+
+  const chartBox = (
+    <Box
+      ref={chartRef}
+      sx={{
+        width: '100%',
+        flex: 1,
+        minHeight: 0,
+      }}
+    />
+  );
+
+  if (isEmbedded) {
+    return chartBox;
+  }
 
   return (
     <DashboardBlock
-      title="트래픽 모니터링" 
+      title={title}
+      controls={timeRangeSelector}
       sx={{ height: '100%', flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
     >
-      <Box
-        ref={chartRef}
-        sx={{
-          width: '100%',
-          flex: 1,
-          minHeight: 0,
-        }}
-      />
+      {chartBox}
     </DashboardBlock>
   );
 };

@@ -16,14 +16,18 @@ import NotificationsNoneOutlinedIcon from '@mui/icons-material/NotificationsNone
 import CheckCircleOutlineOutlinedIcon from '@mui/icons-material/CheckCircleOutlineOutlined'; // 체크
 
 import { useBannerConfig } from '../../hooks/BannerConfigContext';
+import { COMPONENT_COLORS } from '../../theme';
 
 // 공통 카드 높이
 const CARD_HEIGHT = 170;
 
 // ===============================
-// 1️⃣ ModernGaugeBox (⭐️ 원래 코드로 복원)
+// 1️⃣ ModernGaugeBox (⭐️ 점수 변화 감지 및 깜빡임 효과 추가)
 // ===============================
 const ModernGaugeBox = ({ score }) => {
+  const [prevScore, setPrevScore] = React.useState(score);
+  const [isBlinking, setIsBlinking] = React.useState(false);
+  
   const radius = 48;
   const strokeWidth = 10;
   const circumference = 2 * Math.PI * radius;
@@ -35,15 +39,30 @@ const ModernGaugeBox = ({ score }) => {
   const progressArc = (score / 100) * totalArc;
 
   // ⭐️ 2. 점수 기반 색상 및 상태 텍스트 계산
-  let gaugeColor = '#4CAF50'; // 1. ~30% (Green)
+  let gaugeColor = COMPONENT_COLORS.gauge.safe; // 1. ~49% (Green)
   let statusText = '안전';
-  if (score > 80) { // 3. 81~100% (Red)
-    gaugeColor = '#F44336';
+  if (score >= 80) { // 3. 80~100% (Red)
+    gaugeColor = COMPONENT_COLORS.gauge.danger;
     statusText = '위험';
-  } else if (score > 30) { // 2. 31~80% (Blue)
-    gaugeColor = '#2196F3';
+  } else if (score >= 50) { // 2. 50~79% (Orange)
+    gaugeColor = '#ff9800'; // 주황색
     statusText = '경고';
   }
+
+  // ⭐️ 3. 점수 변화 감지 및 깜빡임 트리거
+  React.useEffect(() => {
+    const prevThreshold = prevScore >= 80 ? 'danger' : prevScore >= 50 ? 'warning' : 'safe';
+    const currentThreshold = score >= 80 ? 'danger' : score >= 50 ? 'warning' : 'safe';
+    
+    // 임계값을 넘었을 때만 깜빡임
+    if (prevThreshold !== currentThreshold && (score >= 50 || score >= 80)) {
+      setIsBlinking(true);
+      const timer = setTimeout(() => setIsBlinking(false), 10000); // 10초
+      return () => clearTimeout(timer);
+    }
+    
+    setPrevScore(score);
+  }, [score, prevScore]);
 
   return (
     <Box
@@ -60,6 +79,18 @@ const ModernGaugeBox = ({ score }) => {
         alignItems: 'center',
         justifyContent: 'flex-start',
         position: 'relative',
+        // ⭐️ 깜빡임 애니메이션
+        animation: isBlinking ? 'blink 0.5s ease-in-out 20' : 'none', // 10초 동안 20번 깜빡임
+        '@keyframes blink': {
+          '0%, 100%': { 
+            opacity: 1,
+            boxShadow: '0 2px 5px rgba(0,0,0,0.05)',
+          },
+          '50%': { 
+            opacity: 0.3,
+            boxShadow: `0 0 20px ${gaugeColor}`,
+          },
+        },
       }}
     >
       <Box

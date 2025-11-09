@@ -12,7 +12,7 @@ export const useNetworkDeviceConfig = () => {
 
 export const DEFAULT_DEVICE_CONFIG = {
   control: { name: 'SCADA', ip: '192.168.0.2', icon: 'ComputerIcon', color: '#42a5f5' },
-  switch: { name: 'SWITCH', traffic: '34.9 MB/s', connections: 11, icon: 'CompareArrowsIcon', color: '#42a5f5' },
+  switch: { name: 'SWITCH', traffic: '34.9 MB/s', connections: 11, icon: 'CompareArrowsIcon', color: '#66bb6a' },
   devices: [
     { id: 'plc101', name: 'PLC-101', ip: '192.168.0.101', color: '#ef5350' },
     { id: 'plc102', name: 'PLC-102', ip: '192.168.0.102', color: '#ef5350' },
@@ -23,7 +23,7 @@ export const DEFAULT_DEVICE_CONFIG = {
   ],
   discoveredDevices: [
     { id: 'plc107', name: 'PLC-107', ip: '192.168.0.107', color: '#66bb6a' },
-    { id: 'plc108', name: 'PLC-108', ip: '192.168.0.108', color: '#ff9800' },
+    { id: 'plc108', name: 'PLC-108', ip: '192.168.0.108', color: '#ffa726' },
     { id: 'plc109', name: 'PLC-109', ip: '192.168.0.109', color: '#ab47bc' },
   ]
 };

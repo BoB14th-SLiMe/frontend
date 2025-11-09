@@ -1,120 +1,108 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Box, ToggleButtonGroup, ToggleButton } from '@mui/material';
+import React, { useState, useEffect, useRef } from 'react';
+import { Box, Select, MenuItem } from '@mui/material';
 import * as echarts from 'echarts';
 import DashboardBlock from '../DashboardBlock';
+import { useTimeRange } from '../../hooks/TimeRangeContext';
+import { COMPONENT_COLORS } from '../../theme';
 
-// Mock 데이터 생성 함수 (24시간용)
-const generate24HourData = () => {
+const generateData = (timeRange) => {
     const data = [];
     const now = new Date();
-    
-    for (let i = 23; i >= 0; i--) {
-        const time = new Date(now.getTime() - i * 60 * 60 * 1000);
-        const hour = time.getHours();
-        
-        // 시간대별 패턴 생성 (오전 9-11시에 피크)
-        let baseValue;
-        if (hour >= 9 && hour <= 11) {
-            baseValue = 70 + Math.random() * 30; // 70-100
-        } else if (hour >= 7 && hour <= 14) {
-            baseValue = 40 + Math.random() * 40; // 40-80
-        } else if (hour >= 0 && hour <= 6) {
-            baseValue = 10 + Math.random() * 20; // 10-30
-        } else {
-            baseValue = 30 + Math.random() * 30; // 30-60
-        }
-        
-        data.push({
-            time: time,
-            value: Math.round(baseValue)
-        });
+    let points;
+    let interval; // in minutes
+
+    switch (timeRange) {
+        case '1h':
+            points = 60;
+            interval = 1;
+            break;
+        case '6h':
+            points = 360;
+            interval = 1;
+            break;
+        case '24h':
+            points = 24;
+            interval = 60;
+            break;
+        case '7d':
+            points = 7 * 24;
+            interval = 60;
+            break;
+        default:
+            points = 24;
+            interval = 60;
     }
-    
-    return data;
-};
 
-// Mock 데이터 생성 함수 (7일용)
-const generate7DayData = () => {
-    const data = [];
-    const now = new Date();
-    
-    // 7일 * 24시간 = 168개 데이터 포인트
-    for (let i = 167; i >= 0; i--) {
-        const time = new Date(now.getTime() - i * 60 * 60 * 1000);
+    for (let i = points - 1; i >= 0; i--) {
+        const time = new Date(now.getTime() - i * interval * 60 * 1000);
         const hour = time.getHours();
         const dayOfWeek = time.getDay();
-        
-        // 평일/주말 및 시간대별 패턴
+
         let baseValue;
         const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-        
+
         if (isWeekend) {
-            baseValue = 20 + Math.random() * 30; // 주말은 낮음
+            baseValue = 20 + Math.random() * 30;
         } else if (hour >= 9 && hour <= 17) {
-            baseValue = 50 + Math.random() * 40; // 평일 업무시간
+            baseValue = 50 + Math.random() * 40;
         } else {
             baseValue = 20 + Math.random() * 30;
         }
-        
+
         data.push({
             time: time,
             value: Math.round(baseValue)
         });
     }
-    
     return data;
 };
 
-const RealtimeThreatChart = () => {
+
+const RealtimeThreatChart = ({ showControls = true, isEmbedded = false }) => {
     const chartRef = useRef(null);
     const chartInstance = useRef(null);
-    const [timeRange, setTimeRange] = useState('24h'); // '24h' or '7d'
+    const { threatTimeRange, setThreatTimeRange } = useTimeRange();
     const [chartData, setChartData] = useState([]);
 
-    // 1시간마다 데이터 업데이트
     useEffect(() => {
         const updateData = () => {
-            if (timeRange === '24h') {
-                setChartData(generate24HourData());
-            } else {
-                setChartData(generate7DayData());
-            }
+            setChartData(generateData(threatTimeRange));
         };
-
-        // 초기 데이터 로드
         updateData();
+    }, [threatTimeRange]);
 
-        // 1시간마다 업데이트
-        const interval = setInterval(updateData, 60 * 60 * 1000);
-
-        return () => clearInterval(interval);
-    }, [timeRange]);
-
-    // ECharts 초기화 및 업데이트
     useEffect(() => {
         if (!chartRef.current || chartData.length === 0) return;
 
-        // 차트 인스턴스 생성
         if (!chartInstance.current) {
             chartInstance.current = echarts.init(chartRef.current);
         }
 
-        // 라벨 생성
         const labels = chartData.map((d, index) => {
-            if (timeRange === '24h') {
-                return d.time.getHours().toString().padStart(2, '0');
-            } else {
-                // 7일: 12시간마다 표시
-                if (index % 12 === 0) {
-                    const month = (d.time.getMonth() + 1).toString().padStart(2, '0');
-                    const day = d.time.getDate().toString().padStart(2, '0');
+            const time = d.time;
+            const hour = time.getHours();
+            
+            if (threatTimeRange === '1h' || threatTimeRange === '6h') {
+                if (index % (Math.floor(chartData.length/6)) === 0) {
+                    return `${hour.toString().padStart(2, '0')}:${time.getMinutes().toString().padStart(2, '0')}`;
+                }
+                return '';
+            }
+            else if (threatTimeRange === '24h') {
+                 if (index % 2 === 0) {
+                    return hour.toString().padStart(2, '0') + '시';
+                 }
+                 return '';
+            } else { // 7d
+                if (index % 24 === 0) {
+                    const month = (time.getMonth() + 1).toString().padStart(2, '0');
+                    const day = time.getDate().toString().padStart(2, '0');
                     return `${month}/${day}`;
                 }
                 return '';
             }
         });
 
-        // ECharts 옵션
         const option = {
             animation: false,
             grid: {
@@ -128,16 +116,9 @@ const RealtimeThreatChart = () => {
                 type: 'category',
                 boundaryGap: false,
                 data: labels,
-                axisLine: {
-                    show: false
-                },
-                axisTick: {
-                    show: false
-                },
-                axisLabel: {
-                    color: '#666',
-                    fontSize: 11
-                },
+                axisLine: { show: false },
+                axisTick: { show: false },
+                axisLabel: { color: '#666', fontSize: 11, interval: 'auto' },
                 splitLine: {
                     show: true,
                     lineStyle: {
@@ -151,16 +132,9 @@ const RealtimeThreatChart = () => {
                 min: 0,
                 max: 100,
                 interval: 25,
-                axisLine: {
-                    show: false
-                },
-                axisTick: {
-                    show: false
-                },
-                axisLabel: {
-                    color: '#666',
-                    fontSize: 11
-                },
+                axisLine: { show: false },
+                axisTick: { show: false },
+                axisLabel: { color: '#666', fontSize: 11 },
                 splitLine: {
                     show: true,
                     lineStyle: {
@@ -176,25 +150,25 @@ const RealtimeThreatChart = () => {
                     smooth: true,
                     showSymbol: false,
                     lineStyle: {
-                        color: '#81D4C2',
+                        color: COMPONENT_COLORS.threat.line,
                         width: 2
                     },
                     areaStyle: {
                         color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
                             {
                                 offset: 0,
-                                color: 'rgba(129, 212, 194, 0.4)'
+                                color: COMPONENT_COLORS.threat.area[0]
                             },
                             {
                                 offset: 1,
-                                color: 'rgba(129, 212, 194, 0.05)'
+                                color: COMPONENT_COLORS.threat.area[1]
                             }
                         ])
                     },
                     emphasis: {
                         focus: 'series',
                         itemStyle: {
-                            color: '#81D4C2',
+                            color: COMPONENT_COLORS.threat.line,
                             borderColor: '#fff',
                             borderWidth: 2
                         }
@@ -204,35 +178,33 @@ const RealtimeThreatChart = () => {
             tooltip: {
                 trigger: 'axis',
                 backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                borderColor: '#81D4C2',
+                borderColor: COMPONENT_COLORS.threat.line,
                 borderWidth: 1,
-                textStyle: {
-                    color: '#fff'
-                },
+                textStyle: { color: '#fff' },
                 axisPointer: {
                     type: 'line',
                     lineStyle: {
-                        color: '#81D4C2',
+                        color: COMPONENT_COLORS.threat.line,
                         width: 1,
                         type: 'solid'
                     }
                 },
                 formatter: (params) => {
                     const dataIndex = params[0].dataIndex;
+                    if (!chartData[dataIndex]) return '';
                     const time = chartData[dataIndex].time;
                     const month = time.getMonth() + 1;
                     const day = time.getDate();
                     const hour = time.getHours();
                     const value = params[0].value;
                     
-                    return `${month}/${day} ${hour.toString().padStart(2, '0')}:00<br/>위협 수: ${value}`;
+                    return `${month}/${day} ${hour.toString().padStart(2, '0')}:${time.getMinutes().toString().padStart(2, '0')}<br/>위협 수: ${value}`;
                 }
             }
         };
 
-        chartInstance.current.setOption(option);
+        chartInstance.current.setOption(option, true);
 
-        // 리사이즈 핸들러
         const handleResize = () => {
             chartInstance.current?.resize();
         };
@@ -242,62 +214,54 @@ const RealtimeThreatChart = () => {
         return () => {
             window.removeEventListener('resize', handleResize);
         };
-    }, [chartData, timeRange]);
+    }, [chartData, threatTimeRange]);
 
-    // 컴포넌트 언마운트 시 차트 정리
     useEffect(() => {
         return () => {
             chartInstance.current?.dispose();
         };
     }, []);
 
-    const toggleButtons = (
-        <ToggleButtonGroup
-            value={timeRange}
-            exclusive
-            onChange={(e, newValue) => {
-                if (newValue !== null) {
-                    setTimeRange(newValue);
-                }
-            }}
+    const timeRangeSelector = showControls ? (
+        <Select
+            value={threatTimeRange}
+            onChange={(e) => setThreatTimeRange(e.target.value)}
             size="small"
             sx={{
-                '& .MuiToggleButton-root': {
-                    px: 2,
-                    py: 0.5,
-                    fontSize: '0.875rem',
-                    textTransform: 'none',
-                    border: '1px solid #e0e0e0',
-                    '&.Mui-selected': {
-                        backgroundColor: 'rgba(129, 212, 194, 0.2)',
-                        color: 'rgba(129, 212, 194, 1)',
-                        fontWeight: 600,
-                        '&:hover': {
-                            backgroundColor: 'rgba(129, 212, 194, 0.3)',
-                        }
-                    }
-                }
+                fontSize: '0.8rem',
+                height: 28,
+                '& .MuiSelect-select': { py: 0.2 },
             }}
         >
-            <ToggleButton value="24h">24시간</ToggleButton>
-            <ToggleButton value="7d">7일</ToggleButton>
-        </ToggleButtonGroup>
+            <MenuItem value={'1h'}>1시간</MenuItem>
+            <MenuItem value={'6h'}>6시간</MenuItem>
+            <MenuItem value={'24h'}>24시간</MenuItem>
+            <MenuItem value={'7d'}>7일</MenuItem>
+        </Select>
+    ) : null;
+
+    const chartBox = (
+        <Box 
+            ref={chartRef} 
+            sx={{ 
+                width: '100%', 
+                flex: 1,
+                minHeight: 0
+            }} 
+        />
     );
+
+    if (isEmbedded) {
+        return chartBox;
+    }
 
     return (
         <DashboardBlock 
             title="실시간 위협 수"
-            controls={toggleButtons}
+            controls={timeRangeSelector}
             sx={{ height: '100%', flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
         >
-            <Box 
-                ref={chartRef} 
-                sx={{ 
-                    width: '100%', 
-                    flex: 1,
-                    minHeight: 0
-                }} 
-            />
+            {chartBox}
         </DashboardBlock>
     );
 };

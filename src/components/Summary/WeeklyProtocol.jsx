@@ -1,6 +1,7 @@
 import React from 'react';
 import DashboardBlock from '../DashboardBlock'; 
 import ReactECharts from 'echarts-for-react';
+import { COMPONENT_COLORS, getColorByIndex } from '../../theme';
 
 // 원본 데이터 (단위: 건)
 const rawData = {
@@ -10,10 +11,10 @@ const rawData = {
     UDP: [650, 500, 700, 750, 700, 720, 750],
     LLDP: [300, 350, 250, 300, 280, 310, 300],
     COLORS: {
-        Modbus: '#A0E7E5', // 민트색 (옅은 하늘색)
-        TCP: '#F08080',   // 산호색 (붉은색)
-        UDP: '#F7DC6F',   // 노란색
-        LLDP: '#F5CBA7',  // 살구색 (옅은 주황색)
+        Modbus: getColorByIndex(COMPONENT_COLORS.protocol, 0),
+        TCP: getColorByIndex(COMPONENT_COLORS.protocol, 1),
+        UDP: getColorByIndex(COMPONENT_COLORS.protocol, 2),
+        LLDP: getColorByIndex(COMPONENT_COLORS.protocol, 3),
     }
 };
 

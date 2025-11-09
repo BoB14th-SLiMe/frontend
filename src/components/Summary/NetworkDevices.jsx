@@ -2,6 +2,7 @@ import React from 'react';
 import DashboardBlock from '../DashboardBlock'; 
 import { Box, Stack, Typography, Divider } from '@mui/material';
 import { useNetworkDeviceConfig } from '../../hooks/NetworkDeviceConfigContext';
+import { COMPONENT_COLORS } from '../../theme';
 
 // 아이콘 임포트
 import ComputerIcon from '@mui/icons-material/Computer';
@@ -63,8 +64,8 @@ const SwitchInfoCard = ({ traffic, connections }) => (
         gap: 2, 
         backgroundColor: '#fafafa' 
     }}>
-        <InfoItem icon={SpeedIcon} label="트래픽" value={traffic} color="#42a5f5" />
-        <InfoItem icon={LinkIcon} label="연결" value={connections} color="#42a5f5" />
+        <InfoItem icon={SpeedIcon} label="트래픽" value={traffic} color={COMPONENT_COLORS.devices.switch} />
+        <InfoItem icon={LinkIcon} label="연결" value={connections} color={COMPONENT_COLORS.devices.switch} />
     </Box>
 );
 

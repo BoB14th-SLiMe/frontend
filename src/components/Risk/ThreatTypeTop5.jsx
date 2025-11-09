@@ -4,6 +4,7 @@ import React from 'react';
 import DashboardBlock from '../DashboardBlock';
 import ReactECharts from 'echarts-for-react';
 import { Box } from '@mui/material';
+import { COMPONENT_COLORS } from '../../theme';
 
 // 1. 이미지의 데이터를 기반으로 Mock 데이터 생성
 const MOCK_DATA = [
@@ -14,14 +15,8 @@ const MOCK_DATA = [
     { value: 3, name: '리플레이(Replay) 공격' }
 ];
 
-// 2. 이미지의 색상 팔레트
-const COLOR_PALETTE = [
-    '#4EBCD5', // 산업 프로토콜 이상 행위
-    '#8AD09A', // 비인가 제어 시스템 접근
-    '#54B39B', // 서비스 거부(DoS) 공격
-    '#3D8BFD', // 비정상 레지스터
-    '#607D8B'  // 리플레이(Replay) 공격 (이미지상의 색상)
-];
+// 2. 테마의 위협 색상 팔레트 사용
+const COLOR_PALETTE = COMPONENT_COLORS.threatTypes;
 
 export default function ThreatTypeTop5() {
 
