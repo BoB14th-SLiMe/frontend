@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -7,6 +7,8 @@ import {
   Menu,
   MenuItem,
   TextField,
+  Alert,
+  CircularProgress,
 } from '@mui/material';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -15,42 +17,35 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ko';
 
-// (대시보드 블록 컴포넌트가 필요하지만, 우선 Box로 대체합니다)
-const DashboardBlock = ({ title, controls, sx, children }) => (
-  <Box
-    sx={{
-      backgroundColor: '#FFFFFF',
-      borderRadius: 2,
-      boxShadow: '0 2px 5px rgba(0,0,0,0.05)',
-      display: 'flex',
-      flexDirection: 'column',
-      p: 2,
-      ...sx,
-    }}
-  >
-    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-      <Typography variant="h6" fontWeight="bold">
-        {title}
-      </Typography>
-      {controls && <Box sx={{ ml: 1 }}>{controls}</Box>}
-    </Box>
-    {children}
-  </Box>
-);
+import DashboardBlock from '../DashboardBlock';
+import { threatApi } from '../../services/apiService';
 
-// ⭐️ h7(body2) 폰트 크기에 맞게 박스 높이를 조절하기 위한 스타일
 const smallInputStyle = {
   '& .MuiInputBase-root': {
-    height: '36px', 
+    height: '36px',
   },
 };
 
-export default function AdministratorAction() {
+export default function AdministratorAction({ selectedEvent }) {
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedAction, setSelectedAction] = useState('사후조치 작성');
   const [date, setDate] = useState(dayjs());
   const [manager, setManager] = useState('');
   const [actionContent, setActionContent] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState(null);
+
+  // 선택된 이벤트가 변경되면 초기화
+  useEffect(() => {
+    if (selectedEvent) {
+      setManager('');
+      setActionContent('');
+      setDate(dayjs());
+      setSuccess(false);
+      setError(null);
+    }
+  }, [selectedEvent]);
 
   const handleClick = (event) => setAnchorEl(event.currentTarget);
   const handleClose = () => setAnchorEl(null);
@@ -58,6 +53,52 @@ export default function AdministratorAction() {
   const handleSelect = (action) => {
     setSelectedAction(action);
     setAnchorEl(null);
+  };
+
+  // 저장 핸들러
+  const handleSave = async () => {
+    if (!selectedEvent || !selectedEvent.threatId) {
+      setError('위협 이벤트가 선택되지 않았습니다.');
+      return;
+    }
+
+    if (!manager || !actionContent) {
+      setError('관리자명과 조치사항을 모두 입력해주세요.');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setSuccess(false);
+
+    try {
+      await threatApi.saveAdminAction(selectedEvent.threatId, {
+        status: '완료',
+        author: manager,
+        content: actionContent,
+        completedAt: date.toISOString(),
+      });
+
+      setSuccess(true);
+      console.log('✅ 사후조치 저장 성공');
+
+      // 3초 후 성공 메시지 제거
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (err) {
+      console.error('❌ 사후조치 저장 실패:', err);
+      setError('사후조치 저장에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 취소 핸들러
+  const handleCancel = () => {
+    setManager('');
+    setActionContent('');
+    setDate(dayjs());
+    setError(null);
+    setSuccess(false);
   };
 
   return (
@@ -97,6 +138,23 @@ export default function AdministratorAction() {
       }
       sx={{ flex: 0.8, height: '100%', display: 'flex', flexDirection: 'column' }}
     >
+      {/* 알림 메시지 */}
+      {success && (
+        <Alert severity="success" sx={{ mb: 1 }}>
+          사후조치가 성공적으로 저장되었습니다.
+        </Alert>
+      )}
+      {error && (
+        <Alert severity="error" sx={{ mb: 1 }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
+      {!selectedEvent && (
+        <Alert severity="info" sx={{ mb: 1 }}>
+          위협 이벤트를 선택하면 사후조치를 작성할 수 있습니다.
+        </Alert>
+      )}
+
       {/* 폼 영역 */}
       <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="ko">
         <Stack spacing={2} sx={{ mt: 0.5, flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
@@ -111,12 +169,11 @@ export default function AdministratorAction() {
                 value={date}
                 onChange={(newValue) => setDate(newValue)}
                 format="YYYY.MM.DD"
+                disabled={!selectedEvent || loading}
                 slotProps={{
                   textField: {
                     size: 'small',
-                    sx: {
-                      ...smallInputStyle,
-                    },
+                    sx: { ...smallInputStyle },
                   },
                 }}
               />
@@ -132,14 +189,13 @@ export default function AdministratorAction() {
                 onChange={(e) => setManager(e.target.value)}
                 size="small"
                 placeholder="관리자명"
-                sx={{ 
-                  ...smallInputStyle,
-                }} 
+                disabled={!selectedEvent || loading}
+                sx={{ ...smallInputStyle }}
               />
             </Box>
           </Stack>
 
-          {/* [조치사항] */}
+          {/* 조치사항 */}
           <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
             <Box sx={{ 
               display: 'flex', 
@@ -152,18 +208,23 @@ export default function AdministratorAction() {
               </Typography>
               
               <Box sx={{ display: 'flex', gap: 1 }}>
-                <Button variant="contained" color="primary" sx={{ textTransform: 'none' }} size="small">
-                  저장
+                <Button 
+                  variant="contained" 
+                  color="primary" 
+                  sx={{ textTransform: 'none' }} 
+                  size="small"
+                  onClick={handleSave}
+                  disabled={!selectedEvent || loading}
+                >
+                  {loading ? <CircularProgress size={20} /> : '저장'}
                 </Button>
                 <Button
                   variant="outlined"
                   color="inherit"
                   sx={{ textTransform: 'none' }}
                   size="small"
-                  onClick={() => {
-                    setManager('');
-                    setActionContent('');
-                  }}
+                  onClick={handleCancel}
+                  disabled={loading}
                 >
                   취소
                 </Button>
@@ -177,6 +238,7 @@ export default function AdministratorAction() {
               placeholder="조치사항을 입력하세요"
               fullWidth
               variant="outlined"
+              disabled={!selectedEvent || loading}
               sx={{
                 flex: 1,
                 '& .MuiInputBase-root': {

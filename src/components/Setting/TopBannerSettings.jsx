@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Paper,
   Typography,
@@ -7,13 +7,15 @@ import {
   TextField,
   Button,
   Divider,
-  Stack,
   Grid,
+  Alert,
+  CircularProgress,
 } from '@mui/material';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import { useBannerConfig } from '../../hooks/BannerConfigContext';
+import { settingsApi } from '../../services/apiService';
 import {
   DndContext,
   closestCenter,
@@ -31,7 +33,6 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-// New SortableItem component
 function SortableItem({ item, isEditing, renderEditForm, onTitleDoubleClick, onToggleItem }) {
   const {
     attributes,
@@ -112,12 +113,13 @@ function SortableItem({ item, isEditing, renderEditForm, onTitleDoubleClick, onT
   );
 }
 
-
 export default function TopBannerSettings() {
-  const { bannerItems, toggleItem, updateItemConfig, resetConfig, reorderItems } =
-    useBannerConfig();
+  const { bannerItems, toggleItem, updateItemConfig, resetConfig, reorderItems } = useBannerConfig();
   const [editingId, setEditingId] = useState(null);
   const [editValues, setEditValues] = useState({});
+  const [saving, setSaving] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState(null);
   
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -148,15 +150,53 @@ export default function TopBannerSettings() {
       const oldIndex = bannerItems.findIndex((item) => item.id === active.id);
       const newIndex = bannerItems.findIndex((item) => item.id === over.id);
       
-      // Check if we are trying to mix usage and non-usage items
       const activeItem = bannerItems[oldIndex];
       const overItem = bannerItems[newIndex];
-      if (activeItem.type === 'usage' && overItem.type !== 'usage' || activeItem.type !== 'usage' && overItem.type === 'usage') {
-          // Don't allow mixing
-          return;
+      if (activeItem.type === 'usage' && overItem.type !== 'usage' || 
+          activeItem.type !== 'usage' && overItem.type === 'usage') {
+        return;
       }
 
       reorderItems(oldIndex, newIndex);
+    }
+  };
+
+  // 백엔드에 저장
+  const handleSaveToBackend = async () => {
+    setSaving(true);
+    setError(null);
+    setSuccess(false);
+
+    try {
+      const enabledMetrics = bannerItems
+        .filter(item => item.enabled)
+        .map((item, index) => ({
+          key: item.id,
+          label: item.config.title,
+          order: index,
+        }));
+
+      const disabledMetrics = bannerItems
+        .filter(item => !item.enabled)
+        .map(item => ({
+          key: item.id,
+          label: item.config.title,
+        }));
+
+      await settingsApi.updateBannerConfig({
+        enabled: enabledMetrics,
+        disabled: disabledMetrics,
+      });
+
+      setSuccess(true);
+      console.log('✅ 배너 설정 저장 완료');
+
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (err) {
+      console.error('❌ 배너 설정 저장 실패:', err);
+      setError('설정 저장에 실패했습니다.');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -218,15 +258,38 @@ export default function TopBannerSettings() {
           }}
         >
           <Typography variant="h6">활성화된 항목 ({enabledItems.length})</Typography>
-          <Button
-            size="small"
-            startIcon={<RestartAltIcon />}
-            onClick={resetConfig}
-            variant="outlined"
-          >
-            초기화
-          </Button>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button
+              size="small"
+              startIcon={<RestartAltIcon />}
+              onClick={resetConfig}
+              variant="outlined"
+            >
+              초기화
+            </Button>
+            <Button
+              size="small"
+              onClick={handleSaveToBackend}
+              variant="contained"
+              disabled={saving}
+            >
+              {saving ? <CircularProgress size={20} /> : '저장'}
+            </Button>
+          </Box>
         </Box>
+
+        {success && (
+          <Alert severity="success" sx={{ mb: 2 }}>
+            설정이 성공적으로 저장되었습니다.
+          </Alert>
+        )}
+
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+            {error}
+          </Alert>
+        )}
+
         <Divider sx={{ mb: 2 }} />
 
         <Box sx={{ flex: 1, overflowY: 'auto' }}>

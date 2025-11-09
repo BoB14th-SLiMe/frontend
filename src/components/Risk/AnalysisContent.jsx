@@ -1,14 +1,11 @@
 import React from 'react';
 import { Box, Typography, Stack } from '@mui/material';
-
 import { ANALYSIS_MAP } from '../../mocks/analysisData.js';
 
-
-// 분석 내용 하위 섹션 (변경 없음)
 const AnalysisSubSection = ({ title, children }) => (
   <Box
     sx={{
-      flex: 1, // 높이를 유연하게 조절
+      flex: 1,
       backgroundColor: '#F1F1F3',
       borderRadius: 2,
       display: 'flex',
@@ -18,7 +15,7 @@ const AnalysisSubSection = ({ title, children }) => (
       paddingX: 1.5,
       paddingY: 1,
       boxSizing: 'border-box',
-      overflow: 'hidden' // 내용이 길 경우를 대비
+      overflow: 'hidden',
     }}
   >
     <Typography variant="subtitle1" fontWeight="bold" sx={{ fontSize: 'body1.fontSize', marginBottom: 0.5 }}>
@@ -41,9 +38,33 @@ const AnalysisSubSection = ({ title, children }) => (
   </Box>
 );
 
-export default function AnalysisContent({ event }) {
-  
-  // ⭐️ [수정] event prop에서 threatType을 가져와 MOCK 데이터 매핑
+export default function AnalysisContent({ event, detailData }) {
+  // 1. 백엔드 데이터가 있으면 우선 사용
+  if (detailData?.analysis) {
+    return (
+      <Box sx={{ flex: 1, height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <Typography variant="h5" fontWeight="bold" sx={{ fontSize: 20, marginBottom: 1.5, flexShrink: 0 }}>
+          분석 내용
+        </Typography>
+
+        <Stack spacing={1.5} sx={{ flex: 1, minHeight: 0 }}>
+          <AnalysisSubSection title="탐지 내용">
+            {detailData.analysis.description || '데이터 없음'}
+          </AnalysisSubSection>
+
+          <AnalysisSubSection title="위반 사항">
+            {detailData.risks?.summary || '데이터 없음'}
+          </AnalysisSubSection>
+
+          <AnalysisSubSection title="결론">
+            {detailData.conclusion || '데이터 없음'}
+          </AnalysisSubSection>
+        </Stack>
+      </Box>
+    );
+  }
+
+  // 2. 백엔드 데이터 없으면 MOCK 데이터 사용 (기존 로직)
   const threatType = event?.threatType || 'default';
   const content = ANALYSIS_MAP[threatType] || ANALYSIS_MAP['default'];
 
