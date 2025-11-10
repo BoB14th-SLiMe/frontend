@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { createSSEConnection } from '../service/apiService';
 
 const BannerConfigContext = createContext();
 
@@ -10,13 +11,9 @@ export const useBannerConfig = () => {
   return context;
 };
 
-// ⭐️ API 베이스 URL
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
-
-// ⭐️ 통계 아이템을 위한 공통 색상
 const COMMON_STAT_COLOR = '#12528bff';
 
-// 기본 배너 아이템 설정
 export const DEFAULT_BANNER_ITEMS = [
   {
     id: 'threat_score',
@@ -24,10 +21,7 @@ export const DEFAULT_BANNER_ITEMS = [
     enabled: true,
     order: 0,
     width: 180,
-    config: {
-      score: 0,
-      title: '위협 점수'
-    }
+    config: { score: 0, title: '위협 점수' }
   },
   {
     id: 'anomaly_day',
@@ -100,11 +94,7 @@ export const DEFAULT_BANNER_ITEMS = [
     enabled: true,
     order: 8,
     width: 130,
-    config: {
-      title: 'CPU 사용량',
-      value: 0,
-      color: 'primary'
-    }
+    config: { title: 'CPU 사용량', value: 0, color: 'primary' }
   },
   {
     id: 'ram',
@@ -112,11 +102,7 @@ export const DEFAULT_BANNER_ITEMS = [
     enabled: true,
     order: 9,
     width: 130,
-    config: {
-      title: 'RAM 사용량',
-      value: 0,
-      color: 'success'
-    }
+    config: { title: 'RAM 사용량', value: 0, color: 'success' }
   },
   {
     id: 'gpu',
@@ -124,11 +110,7 @@ export const DEFAULT_BANNER_ITEMS = [
     enabled: true,
     order: 10,
     width: 130,
-    config: {
-      title: 'GPU 사용량',
-      value: 0,
-      color: 'error'
-    }
+    config: { title: 'GPU 사용량', value: 0, color: 'error' }
   }
 ];
 
@@ -146,7 +128,9 @@ export const BannerConfigProvider = ({ children }) => {
     return DEFAULT_BANNER_ITEMS;
   });
 
-  // ⭐️ 백엔드에서 초기 데이터 로드
+  const [sseConnected, setSseConnected] = useState(false);
+
+  // 초기 데이터 로드
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
@@ -156,7 +140,7 @@ export const BannerConfigProvider = ({ children }) => {
         }
         const data = await response.json();
         
-        // 백엔드 데이터로 상태 업데이트
+        // 데이터 업데이트
         if (data.threat_score) {
           updateItemData('threat_score', { score: data.threat_score.score });
         }
@@ -188,75 +172,53 @@ export const BannerConfigProvider = ({ children }) => {
         console.log('✅ 배너 통계 데이터 로드 완료');
       } catch (error) {
         console.error('❌ 배너 통계 로드 실패:', error);
-        // 실패 시 Mock 데이터 유지
       }
     };
 
     fetchInitialData();
   }, []);
 
-  // ⭐️ SSE로 실시간 업데이트 구독
+  // SSE 구독 (개선됨)
   useEffect(() => {
-    let eventSource = null;
-
-    const connectSSE = () => {
-      try {
-        eventSource = new EventSource(`${API_BASE_URL}/sse/stats`);
+    console.log('🔗 배너 SSE 연결 시작...');
+    
+    const sseConnection = createSSEConnection('subscribe', {
+      onConnect: (data) => {
+        console.log('✅ 배너 SSE 연결 성공:', data);
+        setSseConnected(true);
+      },
+      
+      onStats: (data) => {
+        console.log('📊 배너 통계 업데이트:', data);
         
-        eventSource.addEventListener('connect', (event) => {
-          console.log('✅ SSE 연결 성공:', event.data);
-        });
+        // 실시간 데이터 업데이트
+        if (data.recentThreats !== undefined) {
+          updateItemData('anomaly_day', { number: data.recentThreats });
+        }
+        if (data.totalThreats !== undefined) {
+          updateItemData('anomaly_week', { number: data.totalThreats });
+        }
+        if (data.unconfirmedAlerts !== undefined) {
+          updateItemData('unconfirmed_terminal', { number: data.unconfirmedAlerts });
+        }
+        if (data.criticalAlerts !== undefined) {
+          updateItemData('critical_alert', { number: data.criticalAlerts });
+        }
+        
+        // 위협 점수 계산
+        const threatScore = Math.min(100, Math.floor(data.recentThreats * 2));
+        updateItemData('threat_score', { score: threatScore });
+      },
+      
+      onError: (error) => {
+        console.error('❌ 배너 SSE 오류:', error);
+        setSseConnected(false);
+      },
+    });
 
-        eventSource.addEventListener('stats', (event) => {
-          try {
-            const data = JSON.parse(event.data);
-            console.log('📊 실시간 통계 업데이트:', data);
-            
-            // 실시간 데이터로 업데이트
-            if (data.recentThreats !== undefined) {
-              updateItemData('anomaly_day', { number: data.recentThreats });
-            }
-            if (data.totalThreats !== undefined) {
-              updateItemData('anomaly_week', { number: data.totalThreats });
-            }
-            
-            // 위협 점수 계산 (예시)
-            const threatScore = Math.min(100, Math.floor(data.recentThreats * 2));
-            updateItemData('threat_score', { score: threatScore });
-            
-          } catch (err) {
-            console.error('SSE 데이터 파싱 실패:', err);
-          }
-        });
-
-        eventSource.addEventListener('heartbeat', (event) => {
-          console.log('💓 Heartbeat:', event.data);
-        });
-
-        eventSource.onerror = (error) => {
-          console.error('❌ SSE 연결 오류:', error);
-          eventSource.close();
-          
-          // 5초 후 재연결 시도
-          setTimeout(() => {
-            console.log('🔄 SSE 재연결 시도...');
-            connectSSE();
-          }, 5000);
-        };
-      } catch (error) {
-        console.error('SSE 연결 실패:', error);
-      }
-    };
-
-    // SSE 연결 시작
-    connectSSE();
-
-    // 컴포넌트 언마운트 시 SSE 연결 종료
     return () => {
-      if (eventSource) {
-        console.log('🔌 SSE 연결 종료');
-        eventSource.close();
-      }
+      console.log('🔌 배너 SSE 연결 종료');
+      sseConnection?.close();
     };
   }, []);
 
@@ -337,6 +299,7 @@ export const BannerConfigProvider = ({ children }) => {
     getEnabledItems,
     resetConfig,
     updateItemData,
+    sseConnected,
   };
 
   return (

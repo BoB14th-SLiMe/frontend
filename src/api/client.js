@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:8080/api';
+const API_BASE_URL = 'http://ot-backend:8080/api';
 
 export const apiClient = {
   // 대시보드 통계

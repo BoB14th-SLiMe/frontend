@@ -7,6 +7,12 @@ export default defineConfig({
   server: {
     host: '0.0.0.0', // Docker에서 외부 접근 허용
     port: 5173,
+    allowedHosts: [
+      'dashboard.aaaaaaaa.shop', // 외부 도메인 접근 허용
+      'frontend',                // Docker 내부 네트워크 접근 허용
+      'backend',
+      'localhost'
+    ],
     watch: {
       usePolling: true, // Docker 환경에서 파일 변경 감지
     },
