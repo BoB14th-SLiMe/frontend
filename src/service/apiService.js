@@ -99,8 +99,20 @@ export const settingsApi = {
 // Packet APIs
 // ============================================
 export const packetApi = {
-  getPackets: (page = 0, size = 20) => 
+  getPackets: (page = 0, size = 20) =>
     apiClient.get('/packets', { params: { page, size } }),
+};
+
+// ============================================
+// Traffic APIs
+// ============================================
+export const trafficApi = {
+  getTrafficMonitoring: () =>
+    apiClient.get('/traffic/monitoring'),
+  getHourlyTraffic: () =>
+    apiClient.get('/traffic/hourly'),
+  getAverageTraffic: () =>
+    apiClient.get('/traffic/average'),
 };
 
 // ============================================
