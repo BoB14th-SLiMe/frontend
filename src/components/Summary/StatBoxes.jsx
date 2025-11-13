@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Stack, Typography, LinearProgress, Button } from '@mui/material';
 
 // 1. 기존 아이콘 + 이미지에 표시된 아이콘 추가
@@ -227,10 +227,11 @@ const StatCard = ({ icon: Icon, number, title, color }) => (
 // 3️⃣ ResourceUsageCard (⭐️ 1개 카드로 통합)
 // ===============================
 const ResourceUsageCard = ({ items }) => {
-  const getColor = (colorName) => {
-    if (colorName === 'error') return '#F44336';
-    if (colorName === 'success') return '#4CAF50';
-    return '#2196F3'; // 'primary' or default
+  // 값에 따른 색상 결정: 0-50(파랑), 51-80(초록), 81+(빨강)
+  const getColor = (value) => {
+    if (value > 80) return '#F44336'; // 빨강
+    if (value > 50) return '#4CAF50'; // 초록
+    return '#2196F3'; // 파랑 (0-50)
   };
 
   return (
@@ -277,7 +278,7 @@ const ResourceUsageCard = ({ items }) => {
               height: 15,
               backgroundColor: '#e0e0e0',
               '& .MuiLinearProgress-bar': {
-                backgroundColor: getColor(item.color),
+                backgroundColor: getColor(item.value), // value 기반 색상
               },
             }}
           />
@@ -308,6 +309,26 @@ const ResourceUsageCard = ({ items }) => {
 export default function StatBoxes() {
   const { getEnabledItems } = useBannerConfig();
   const allItems = getEnabledItems();
+  const [blinking, setBlinking] = useState(false);
+
+  // 긴급 위협이 있는지 확인
+  const hasCriticalThreat = allItems.some(item => {
+    if (item.type === 'gauge' && item.config.score > 80) return true;
+    if (item.type === 'stat' && item.config.title === '긴급 알람' && item.config.number > 0) return true;
+    return false;
+  });
+
+  // 0.5초 간격으로 깜빡임
+  useEffect(() => {
+    if (hasCriticalThreat) {
+      const interval = setInterval(() => {
+        setBlinking(prev => !prev);
+      }, 500);
+      return () => clearInterval(interval);
+    } else {
+      setBlinking(false);
+    }
+  }, [hasCriticalThreat]);
 
   // 아이콘 매핑 (이미지 아이콘 추가)
   const iconMap = {
@@ -344,6 +365,9 @@ export default function StatBoxes() {
         overflowX: 'auto', // 항목이 많아지면 스크롤
         height: CARD_HEIGHT + 10, // 스크롤바 공간 포함
         py: '5px', // 스크롤바 가려지지 않게
+        border: hasCriticalThreat && blinking ? '9px solid #E60032' : '9px solid transparent',
+        borderRadius: 2,
+        transition: 'border-color 0.1s ease-in-out',
       }}
     >
       {/* 1. 위협 점수 카드 (ModernGaugeBox) 렌더링 */}

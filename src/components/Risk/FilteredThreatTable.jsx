@@ -66,19 +66,19 @@ export default function FilteredThreatTable({ onEventSelect }) {
       // 데이터 변환 (백엔드 형식 → 프론트엔드 형식)
       const transformedData = response.data.content.map((threat, index) => ({
         id: index + 1 + (page * 20),
-        severity: mapSeverity(threat.threatLevel),
-        severityLevel: mapSeverityLevel(threat.threatLevel),
-        severityColor: mapSeverityColor(threat.threatLevel),
-        timestamp: dayjs(threat.timestamp).format('YYYY.MM.DD HH:mm:ss'),
-        threatType: threat.threatType,
-        sourceIp: threat.srcIp,
+        severity: mapSeverity(threat.threat_level),
+        severityLevel: mapSeverityLevel(threat.threat_level),
+        severityColor: mapSeverityColor(threat.threat_level),
+        timestamp: dayjs(threat['@timestamp']).format('YYYY.MM.DD HH:mm:ss'),
+        threatType: threat.threat_type,
+        sourceIp: threat.src_ip,
         macAddress: 'N/A', // TODO: 백엔드에 MAC 추가
-        targetDevice: threat.dstIp,
-        detectionMethod: threat.attackSignature || 'Rule',
+        targetDevice: threat.dst_ip,
+        detectionMethod: threat.attack_signature || 'Rule',
         status: mapStatus(threat.status),
         statusValue: threat.status,
         report: threat.status === 'resolved' ? '완료' : '확인',
-        threatId: threat.threatId // 상세 조회용
+        threatId: threat.threat_id // 상세 조회용
       }));
       
       setData(transformedData);

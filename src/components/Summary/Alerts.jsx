@@ -1,9 +1,9 @@
-import React from 'react';
-// ⭐️ DashboardBlock 경로는 실제 프로젝트에 맞게 확인 필요 (../DashboardBlock)
-import DashboardBlock from '../DashboardBlock'; 
-import { Box, Typography, Button, Divider } from '@mui/material'; 
-import WarningIcon from '@mui/icons-material/Warning'; 
-import CheckCircleIcon from '@mui/icons-material/CheckCircle'; 
+import React, { useState, useEffect } from 'react';
+import DashboardBlock from '../DashboardBlock';
+import { Box, Typography, Button, Divider, CircularProgress } from '@mui/material';
+import WarningIcon from '@mui/icons-material/Warning';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import { xaiApi } from '../../service/apiService'; 
 
 // 1. 개별 알림 항목 컴포넌트
 const AlertItem = ({ time, message, status, risk, onConfirm }) => {
@@ -90,34 +90,98 @@ const AlertItem = ({ time, message, status, risk, onConfirm }) => {
 };
 
 
-// 2. 가상 알림 데이터 (RiskPage의 sampleData와 ID/내용 일치)
-const mockAlerts = [
-    { time: '17:20:15', message: '이상 탐지 후 분석 중...', status: 'analyzing', risk: '91%', id: 5 },
-    { time: '17:16:04', message: 'SLM 보고서 작성 완료', status: 'report_yellow', id: 4 },
-    { time: '16:45:10', message: 'SLM 보고서 작성 완료', status: 'report_red', id: 3 },
-    { time: '13:20:56', message: '이상 행위 조치 완료', status: 'completed', id: 2 },
-    { time: '13:20:55', message: '이상 행위 조치 완료', status: 'completed', id: 1 },
-];
-
-
-// 3. 메인 컴포넌트 (Alerts.jsx)
-// ⭐️ onAlertConfirm prop을 부모(SummaryPage)로부터 받음
+// 2. 메인 컴포넌트 (Alerts.jsx)
 export default function Alerts({ onAlertConfirm }) {
+  const [alerts, setAlerts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchAlerts = async () => {
+    try {
+      setLoading(true);
+      const response = await xaiApi.getRecentAnalyses();
+
+      // XAI 데이터를 알림 형식으로 변환 (response.data는 이미 배열)
+      const xaiData = Array.isArray(response.data) ? response.data : [];
+      const formattedAlerts = xaiData.slice(0, 5).map((xai, index) => {
+        const time = new Date(xai.timestamp).toLocaleTimeString('ko-KR', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        });
+
+        let status = 'analyzing';
+        let message = `${xai.threatType} 탐지`;
+
+        // 상태에 따라 메시지와 상태 결정
+        if (xai.status === '확인' || xai.status === '해결') {
+          status = 'completed';
+          message = `${xai.threatType} 조치 완료`;
+        } else if (xai.status === '분석중') {
+          status = 'analyzing';
+          message = `${xai.threatType} 분석 중...`;
+        } else {
+          status = index % 2 === 0 ? 'report_red' : 'report_yellow';
+          message = `${xai.threatType} 보고서 작성 완료`;
+        }
+
+        return {
+          id: xai.id,
+          time,
+          message,
+          status,
+          risk: '85%', // 고정값 (실제로는 위협 점수 계산 필요)
+        };
+      });
+
+      setAlerts(formattedAlerts);
+    } catch (error) {
+      console.error('알림 데이터 조회 실패:', error);
+      // 에러 발생 시 빈 배열
+      setAlerts([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAlerts();
+
+    // 1분마다 자동 갱신
+    const intervalId = setInterval(fetchAlerts, 60000);
+
+    return () => clearInterval(intervalId);
+  }, []);
+
+  if (loading) {
+    return (
+      <DashboardBlock title="이상 탐지 및 알람" sx={{ height: '100%', flex: 5 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
+          <CircularProgress />
+        </Box>
+      </DashboardBlock>
+    );
+  }
+
   return (
     <DashboardBlock title="이상 탐지 및 알람" sx={{ height: '100%', flex: 5 }}>
-            <Box sx={{ mt: 0, '& > div:not(:last-child)': { borderBottom: '1px solid #eee' }, pb: 1 }}> 
-                {mockAlerts.map((alert, index) => (
-                    <AlertItem
-                        key={alert.id}
-                        time={alert.time}
-                        message={alert.message}
-                        status={alert.status}
-                        risk={alert.risk}
-                        // ⭐️ handleConfirm에 alert.id 전달
-                        onConfirm={() => onAlertConfirm(alert.id)}
-                    />
-                ))}
-            </Box>
-        </DashboardBlock>
-    );
+      <Box sx={{ mt: 0, '& > div:not(:last-child)': { borderBottom: '1px solid #eee' }, pb: 1 }}>
+        {alerts.length === 0 ? (
+          <Box sx={{ p: 4, textAlign: 'center', color: 'text.secondary' }}>
+            <Typography>현재 알림이 없습니다.</Typography>
+          </Box>
+        ) : (
+          alerts.map((alert) => (
+            <AlertItem
+              key={alert.id}
+              time={alert.time}
+              message={alert.message}
+              status={alert.status}
+              risk={alert.risk}
+              onConfirm={() => onAlertConfirm?.(alert.id)}
+            />
+          ))
+        )}
+      </Box>
+    </DashboardBlock>
+  );
 }

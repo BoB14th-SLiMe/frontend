@@ -73,7 +73,7 @@ export default function AdministratorAction({ selectedEvent }) {
 
     try {
       await threatApi.saveAdminAction(selectedEvent.threatId, {
-        status: '완료',
+        status: 'completed',
         author: manager,
         content: actionContent,
         completedAt: date.toISOString(),

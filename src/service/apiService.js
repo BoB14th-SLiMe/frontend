@@ -113,6 +113,50 @@ export const trafficApi = {
     apiClient.get('/traffic/hourly'),
   getAverageTraffic: () =>
     apiClient.get('/traffic/average'),
+  getNetworkStats: () =>
+    apiClient.get('/traffic/network-stats'),
+};
+
+// ============================================
+// XAI Analysis APIs
+// ============================================
+export const xaiApi = {
+  getAnalyses: (page = 0, size = 10) =>
+    apiClient.get('/xai/analyses', { params: { page, size } }),
+  getRecentAnalyses: () =>
+    apiClient.get('/xai/analyses/recent'),
+};
+
+// ============================================
+// System Metrics APIs
+// ============================================
+export const metricsApi = {
+  getLatestMetrics: () =>
+    apiClient.get('/metrics/system/latest'),
+  getAverageMetrics: (minutes = 60) =>
+    apiClient.get('/metrics/system/average', { params: { minutes } }),
+};
+
+// ============================================
+// Protocol APIs
+// ============================================
+export const protocolApi = {
+  getHourlyProtocol: () =>
+    apiClient.get('/protocols/hourly'),
+  getWeeklyProtocol: () =>
+    apiClient.get('/protocols/weekly'),
+};
+
+// ============================================
+// Asset APIs
+// ============================================
+export const assetApi = {
+  getAllAssets: () =>
+    apiClient.get('/assets'),
+  getAssetsByType: (assetType) =>
+    apiClient.get(`/assets/type/${assetType}`),
+  getActiveDevices: () =>
+    apiClient.get('/assets/active'),
 };
 
 // ============================================
