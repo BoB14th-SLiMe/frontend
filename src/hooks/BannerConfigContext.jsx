@@ -137,9 +137,18 @@ export const BannerConfigProvider = ({ children }) => {
     const saved = localStorage.getItem('bannerConfig');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        // 배열인지 확인
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        } else {
+          console.warn('Invalid banner config format, using default');
+          localStorage.removeItem('bannerConfig');
+          return DEFAULT_BANNER_ITEMS;
+        }
       } catch (e) {
         console.error('Failed to parse banner config:', e);
+        localStorage.removeItem('bannerConfig');
         return DEFAULT_BANNER_ITEMS;
       }
     }
@@ -302,6 +311,11 @@ export const BannerConfigProvider = ({ children }) => {
   };
 
   const getEnabledItems = () => {
+    // 배열인지 확인
+    if (!Array.isArray(bannerItems)) {
+      console.error('bannerItems is not an array:', bannerItems);
+      return [];
+    }
     return bannerItems
       .filter(item => item.enabled)
       .sort((a, b) => a.order - b.order);
