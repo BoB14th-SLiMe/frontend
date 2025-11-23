@@ -1,92 +1,77 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Box, ToggleButtonGroup, ToggleButton } from '@mui/material';
 import * as echarts from 'echarts';
 import DashboardBlock from '../DashboardBlock';
 
-// Mock 데이터 생성 함수 (24시간용)
-const generate24HourData = () => {
-    const data = [];
-    const now = new Date();
-    
-    for (let i = 23; i >= 0; i--) {
-        const time = new Date(now.getTime() - i * 60 * 60 * 1000);
-        const hour = time.getHours();
-        
-        // 시간대별 패턴 생성 (오전 9-11시에 피크)
-        let baseValue;
-        if (hour >= 9 && hour <= 11) {
-            baseValue = 70 + Math.random() * 30; // 70-100
-        } else if (hour >= 7 && hour <= 14) {
-            baseValue = 40 + Math.random() * 40; // 40-80
-        } else if (hour >= 0 && hour <= 6) {
-            baseValue = 10 + Math.random() * 20; // 10-30
-        } else {
-            baseValue = 30 + Math.random() * 30; // 30-60
-        }
-        
-        data.push({
-            time: time,
-            value: Math.round(baseValue)
-        });
-    }
-    
-    return data;
-};
-
-// Mock 데이터 생성 함수 (7일용)
-const generate7DayData = () => {
-    const data = [];
-    const now = new Date();
-    
-    // 7일 * 24시간 = 168개 데이터 포인트
-    for (let i = 167; i >= 0; i--) {
-        const time = new Date(now.getTime() - i * 60 * 60 * 1000);
-        const hour = time.getHours();
-        const dayOfWeek = time.getDay();
-        
-        // 평일/주말 및 시간대별 패턴
-        let baseValue;
-        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-        
-        if (isWeekend) {
-            baseValue = 20 + Math.random() * 30; // 주말은 낮음
-        } else if (hour >= 9 && hour <= 17) {
-            baseValue = 50 + Math.random() * 40; // 평일 업무시간
-        } else {
-            baseValue = 20 + Math.random() * 30;
-        }
-        
-        data.push({
-            time: time,
-            value: Math.round(baseValue)
-        });
-    }
-    
-    return data;
-};
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
 const RealtimeThreatChart = () => {
     const chartRef = useRef(null);
     const chartInstance = useRef(null);
     const [timeRange, setTimeRange] = useState('24h'); // '24h' or '7d'
     const [chartData, setChartData] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    // 1시간마다 데이터 업데이트
-    useEffect(() => {
-        const updateData = () => {
-            if (timeRange === '24h') {
-                setChartData(generate24HourData());
+    // Fallback data generation
+    const generateFallbackData = () => {
+        const data = [];
+        const now = new Date();
+        const hours = timeRange === '24h' ? 24 : 168;
+
+        for (let i = hours - 1; i >= 0; i--) {
+            const time = new Date(now.getTime() - i * 60 * 60 * 1000);
+            const hour = time.getHours();
+
+            let baseValue;
+            if (hour >= 9 && hour <= 11) {
+                baseValue = 70 + Math.random() * 30;
+            } else if (hour >= 7 && hour <= 14) {
+                baseValue = 40 + Math.random() * 40;
+            } else if (hour >= 0 && hour <= 6) {
+                baseValue = 10 + Math.random() * 20;
             } else {
-                setChartData(generate7DayData());
+                baseValue = 30 + Math.random() * 30;
+            }
+
+            data.push({
+                time: time,
+                value: Math.round(baseValue)
+            });
+        }
+
+        return data;
+    };
+
+    // Fetch data from API
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/dashboard/threats/timeline?range=${timeRange}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const result = await response.json();
+
+                // Transform API data
+                const transformedData = (result.data || []).map(item => ({
+                    time: new Date(item.timestamp || item.time),
+                    value: item.value || 0
+                }));
+
+                setChartData(transformedData);
+                setLoading(false);
+            } catch (error) {
+                console.error('❌ 실시간 위협 수 데이터 로드 실패:', error);
+                // Use fallback mock data on error
+                setChartData(generateFallbackData());
+                setLoading(false);
             }
         };
 
-        // 초기 데이터 로드
-        updateData();
+        fetchData();
 
-        // 1시간마다 업데이트
-        const interval = setInterval(updateData, 60 * 60 * 1000);
-
+        // Refresh every 60 seconds
+        const interval = setInterval(fetchData, 60000);
         return () => clearInterval(interval);
     }, [timeRange]);
 
@@ -149,8 +134,6 @@ const RealtimeThreatChart = () => {
             yAxis: {
                 type: 'value',
                 min: 0,
-                max: 100,
-                interval: 25,
                 axisLine: {
                     show: false
                 },

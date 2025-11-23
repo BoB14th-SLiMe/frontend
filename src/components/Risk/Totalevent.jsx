@@ -1,21 +1,64 @@
 // src/components/Risk/ThreatGradeIncidence.jsx
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardBlock from '../DashboardBlock';
 import { Box, Typography } from '@mui/material';
 import ReactECharts from 'echarts-for-react';
 
-const barData = [
-    { label: '경고', value: 21, color: '#FFA726' },
-    { label: '긴급', value: 2, color: '#E91E63' }
-];
-
-const tableData = [
-    { ip: 'PLC-001', count: 30 },
-    { ip: 'PLC-002', count: 10 },
-    { ip: 'PLC-003', count: 5 },
-];
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
 export default function ThreatGradeIncidence() {
+    const [barData, setBarData] = useState([
+        { label: '경고', value: 0, color: '#FFA726' },
+        { label: '긴급', value: 0, color: '#E91E63' }
+    ]);
+    const [tableData, setTableData] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/dashboard/threats/by-level`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+
+                // Update bar chart data
+                setBarData([
+                    { label: '경고', value: data.attention || 0, color: '#FFA726' },
+                    { label: '긴급', value: data.warning || 0, color: '#E91E63' }
+                ]);
+
+                // Update table data
+                setTableData((data.destinations || []).map(dest => ({
+                    ip: dest.ip,
+                    count: parseInt(dest.count) || 0
+                })));
+
+                setLoading(false);
+            } catch (error) {
+                console.error('❌ 위협 등급별 사건 수 데이터 로드 실패:', error);
+                // Use fallback data on error
+                setBarData([
+                    { label: '경고', value: 21, color: '#FFA726' },
+                    { label: '긴급', value: 2, color: '#E91E63' }
+                ]);
+                setTableData([
+                    { ip: 'PLC-001', count: 30 },
+                    { ip: 'PLC-002', count: 10 },
+                    { ip: 'PLC-003', count: 5 },
+                ]);
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+
+        // Refresh every 60 seconds
+        const interval = setInterval(fetchData, 60000);
+        return () => clearInterval(interval);
+    }, []);
+
     const option = {
         animation: false,
         grid: {
@@ -27,8 +70,7 @@ export default function ThreatGradeIncidence() {
         },
         xAxis: {
             type: 'value',
-            show: false,
-            max: 25
+            show: false
         },
         yAxis: {
             type: 'category',
@@ -66,26 +108,27 @@ export default function ThreatGradeIncidence() {
     };
 
     return (
-        <DashboardBlock 
-            title="위협 등급별 사건 수 (7일)" 
-            sx={{ height: '100%', flex: 1, minWidth: 0 }} 
+        <DashboardBlock
+            title="위협 등급별 사건 수 (7일)"
+            sx={{ height: '100%', flex: 1, minWidth: 0 }}
         >
-            <Box sx={{ 
-                display: 'flex', 
-                flexDirection: 'column', 
+            <Box sx={{
+                display: 'flex',
+                flexDirection: 'column',
                 height: '100%'
             }}>
                 {/* 막대 그래프 */}
                 <Box sx={{ height: 80 }}>
-                    <ReactECharts 
+                    <ReactECharts
                         option={option}
                         style={{ height: '100%', width: '100%' }}
+                        showLoading={loading}
                     />
                 </Box>
-                
+
                 {/* 공격 목적지 자산 테이블 */}
                 <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid #e0e0e0' }}>
-                    <Typography sx={{ 
+                    <Typography sx={{
                         fontSize: '0.9rem',
                         fontWeight: 600,
                         color: '#333',
@@ -93,9 +136,9 @@ export default function ThreatGradeIncidence() {
                     }}>
                         목적지 자산
                     </Typography>
-                    
+
                     <Box sx={{ display: 'flex', mb: 1.5, pb: 0.1, borderBottom: '1px solid #f0f0f0' }}>
-                        <Typography sx={{ 
+                        <Typography sx={{
                             flex: 1,
                             fontSize: '0.8rem',
                             color: '#999',
@@ -103,7 +146,7 @@ export default function ThreatGradeIncidence() {
                         }}>
                             목적지
                         </Typography>
-                        <Typography sx={{ 
+                        <Typography sx={{
                             width: 80,
                             fontSize: '0.8rem',
                             color: '#999',
@@ -113,21 +156,21 @@ export default function ThreatGradeIncidence() {
                             공격 횟수
                         </Typography>
                     </Box>
-                    
+
                     {tableData.map((row, idx) => (
-                        <Box key={idx} sx={{ 
+                        <Box key={idx} sx={{
                             display: 'flex',
                             py: 0.8,
                             borderBottom: idx < tableData.length - 1 ? '1px solid #f5f5f5' : 'none'
                         }}>
-                            <Typography sx={{ 
+                            <Typography sx={{
                                 flex: 1,
                                 fontSize: '0.85rem',
                                 color: '#333'
                             }}>
                                 {row.ip}
                             </Typography>
-                            <Typography sx={{ 
+                            <Typography sx={{
                                 width: 80,
                                 fontSize: '0.85rem',
                                 color: '#333',
