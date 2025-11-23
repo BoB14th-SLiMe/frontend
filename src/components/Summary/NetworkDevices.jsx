@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import DashboardBlock from '../DashboardBlock';
 import { Box, Stack, Typography, Divider, CircularProgress } from '@mui/material';
-import { assetApi, trafficApi } from '../../service/apiService';
+import { useNetworkDeviceConfig } from '../../hooks/NetworkDeviceConfigContext';
 
 // 아이콘 임포트
 import ComputerIcon from '@mui/icons-material/Computer';
@@ -94,78 +94,7 @@ const LayerSection = ({ label, children, showDivider = true, alignItems = "flex-
 
 // ===== 메인 컴포넌트 =====
 export default function NetworkDevices() {
-    const [hmiDevices, setHmiDevices] = useState([]);
-    const [plcDevices, setPlcDevices] = useState([]);
-    const [networkStats, setNetworkStats] = useState({ pps: 0, connections: 0 });
-    const [loading, setLoading] = useState(true);
-
-    // 데이터 로드
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                setLoading(true);
-
-                // HMI 장비 조회
-                const hmiResponse = await assetApi.getAssetsByType('hmi');
-                const hmiData = hmiResponse.data
-                    .filter(asset => asset.isVisible)
-                    .map(asset => ({
-                        id: asset.assetId,
-                        name: asset.name,
-                        ip: asset.ipAddress,
-                        status: asset.status,
-                        color: getColorByStatus(asset.status)
-                    }));
-                setHmiDevices(hmiData);
-
-                // PLC 장비 조회
-                const plcResponse = await assetApi.getAssetsByType('plc');
-                const plcData = plcResponse.data
-                    .filter(asset => asset.isVisible)
-                    .map(asset => ({
-                        id: asset.assetId,
-                        name: asset.name,
-                        ip: asset.ipAddress,
-                        status: asset.status,
-                        color: getColorByStatus(asset.status)
-                    }));
-                setPlcDevices(plcData);
-
-                // 네트워크 통계 조회
-                const statsResponse = await trafficApi.getNetworkStats();
-                setNetworkStats({
-                    pps: statsResponse.data.pps || 0,
-                    connections: statsResponse.data.connections || 0
-                });
-
-            } catch (error) {
-                console.error('네트워크 장치 데이터 로드 실패:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchData();
-
-        // 30초마다 갱신
-        const intervalId = setInterval(fetchData, 30000);
-
-        return () => clearInterval(intervalId);
-    }, []);
-
-    // 상태에 따른 색상 결정
-    const getColorByStatus = (status) => {
-        switch (status) {
-            case 'critical':
-                return '#E60032'; // 위협 탐지 - 빨강
-            case 'warning':
-                return '#FF9800'; // 트래픽 없음 - 주황
-            case 'normal':
-                return '#4582FF'; // 정상 - 파랑
-            default:
-                return '#9E9E9E'; // 알 수 없음 - 회색
-        }
-    };
+    const { hmiDevices, plcDevices, networkStats, loading } = useNetworkDeviceConfig();
 
     // 4개씩 끊어서 표시
     const chunkedPLCs = [];

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
+  Typography,
   useTheme,
 } from '@mui/material';
 import * as echarts from 'echarts';
@@ -218,9 +219,24 @@ const TrafficMonitoring = () => {
 
   // ⭐️ 토글 버튼 변수(toggleButtons) 제거
 
+  if (chartData.labels.length === 0) {
+    return (
+      <DashboardBlock
+        title="트래픽 모니터링"
+        sx={{ height: '100%', flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
+      >
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+          <Typography variant="body2" color="text.secondary">
+            데이터가 없습니다
+          </Typography>
+        </Box>
+      </DashboardBlock>
+    );
+  }
+
   return (
     <DashboardBlock
-      title="트래픽 모니터링" 
+      title="트래픽 모니터링"
       sx={{ height: '100%', flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
     >
       <Box

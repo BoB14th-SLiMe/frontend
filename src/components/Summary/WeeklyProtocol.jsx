@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import DashboardBlock from '../DashboardBlock';
 import ReactECharts from 'echarts-for-react';
-import { CircularProgress, Box } from '@mui/material';
+import { CircularProgress, Box, Typography } from '@mui/material';
 import { protocolApi } from '../../service/apiService';
 
 const PROTOCOL_COLORS = {
@@ -135,6 +135,18 @@ export default function WeeklyProtocol() {
             <DashboardBlock title="주간 프로토콜 현황" sx={{ height: '100%', flex: 1 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
                     <CircularProgress />
+                </Box>
+            </DashboardBlock>
+        );
+    }
+
+    if (chartData.dates.length === 0 || Object.keys(chartData.series).length === 0) {
+        return (
+            <DashboardBlock title="주간 프로토콜 현황" sx={{ height: '100%', flex: 1 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                    <Typography variant="body2" color="text.secondary">
+                        데이터가 없습니다
+                    </Typography>
                 </Box>
             </DashboardBlock>
         );
