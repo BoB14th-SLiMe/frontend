@@ -37,6 +37,8 @@ export const NetworkDeviceConfigProvider = ({ children }) => {
   // API에서 데이터 가져오기
   const fetchDeviceData = async () => {
     try {
+      console.log('🔄 NetworkDeviceConfig: 데이터 가져오기 시작', { isInitialLoad });
+
       // 초기 로딩일 때만 loading을 true로 설정
       if (isInitialLoad) {
         setLoading(true);
@@ -54,6 +56,7 @@ export const NetworkDeviceConfigProvider = ({ children }) => {
           color: getColorByStatus(asset.status),
           icon: 'ComputerIcon'
         }));
+      console.log('✅ HMI 장비 조회 완료:', hmiData.length, '개');
       setHmiDevices(hmiData);
 
       // PLC 장비 조회
@@ -68,20 +71,28 @@ export const NetworkDeviceConfigProvider = ({ children }) => {
           color: getColorByStatus(asset.status),
           icon: 'DataObjectIcon'
         }));
+      console.log('✅ PLC 장비 조회 완료:', plcData.length, '개');
       setPlcDevices(plcData);
 
       // 네트워크 통계 조회
       const statsResponse = await trafficApi.getNetworkStats();
-      setNetworkStats({
+      const stats = {
         pps: statsResponse.data.pps || 0,
         connections: statsResponse.data.connections || 0
-      });
+      };
+      console.log('✅ 네트워크 통계 조회 완료:', stats);
+      setNetworkStats(stats);
 
     } catch (error) {
-      console.error('네트워크 장치 데이터 로드 실패:', error);
+      console.error('❌ 네트워크 장치 데이터 로드 실패:', error);
+      // 에러 발생 시에도 빈 데이터로 설정
+      setHmiDevices([]);
+      setPlcDevices([]);
+      setNetworkStats({ pps: 0, connections: 0 });
     } finally {
       // 초기 로딩 완료 후에는 loading을 false로 유지
       if (isInitialLoad) {
+        console.log('✅ 초기 로딩 완료');
         setLoading(false);
         setIsInitialLoad(false);
       }

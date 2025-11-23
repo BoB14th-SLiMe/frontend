@@ -68,7 +68,17 @@ const SwitchInfoCard = ({ traffic, connections }) => (
 export default function NetworkTopologySettings() {
   const { hmiDevices, plcDevices, control, switchInfo, loading } = useNetworkDeviceConfig();
 
+  // 디버깅 로그
+  console.log('🔧 NetworkTopologySettings 렌더링:', {
+    loading,
+    hmiDevices: hmiDevices?.length,
+    plcDevices: plcDevices?.length,
+    control,
+    switchInfo
+  });
+
   if (loading) {
+    console.log('⏳ NetworkTopologySettings 로딩 중...');
     return (
       <Paper sx={{ p: 3, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <CircularProgress />
