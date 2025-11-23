@@ -14,12 +14,17 @@ export const DEFAULT_DEVICE_CONFIG = {
   control: { name: 'SCADA', ip: '192.168.0.2', icon: 'ComputerIcon', color: '#42a5f5' },
   switch: { name: 'SWITCH', traffic: '34.9 MB/s', connections: 11, icon: 'CompareArrowsIcon', color: '#42a5f5' },
   devices: [
+    // PLC 장치들
     { id: 'plc101', name: 'PLC-101', ip: '192.168.0.101', color: '#ef5350' },
     { id: 'plc102', name: 'PLC-102', ip: '192.168.0.102', color: '#ef5350' },
     { id: 'plc103', name: 'PLC-103', ip: '192.168.0.103', color: '#42a5f5' },
     { id: 'plc104', name: 'PLC-104', ip: '192.168.0.104', color: '#42a5f5' },
     { id: 'plc105', name: 'PLC-105', ip: '192.168.0.105', color: '#42a5f5' },
     { id: 'plc106', name: 'PLC-106', ip: '192.168.0.106', color: '#42a5f5' },
+    // HMI 장치들 (3개 추가)
+    { id: 'hmi-blending', name: 'HMI-Blending', ip: '192.168.10.80', color: '#66bb6a' },
+    { id: 'hmi-labeling', name: 'HMI-Labeling', ip: '192.168.10.81', color: '#66bb6a' },
+    { id: 'hmi-robot', name: 'HMI-Robot', ip: '192.168.10.82', color: '#66bb6a' },
   ],
   discoveredDevices: [
     { id: 'plc107', name: 'PLC-107', ip: '192.168.0.107', color: '#66bb6a' },

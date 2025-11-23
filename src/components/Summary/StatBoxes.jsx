@@ -227,10 +227,11 @@ const StatCard = ({ icon: Icon, number, title, color }) => (
 // 3️⃣ ResourceUsageCard (⭐️ 1개 카드로 통합)
 // ===============================
 const ResourceUsageCard = ({ items }) => {
-  const getColor = (colorName) => {
-    if (colorName === 'error') return '#F44336';
-    if (colorName === 'success') return '#4CAF50';
-    return '#2196F3'; // 'primary' or default
+  // 사용량에 따른 색상 반환
+  const getColorByValue = (value) => {
+    if (value >= 80) return '#F44336'; // 빨간색 (80~100)
+    if (value >= 50) return '#4CAF50'; // 초록색 (50~80)
+    return '#2196F3'; // 파란색 (0~50)
   };
 
   return (
@@ -277,7 +278,7 @@ const ResourceUsageCard = ({ items }) => {
               height: 15,
               backgroundColor: '#e0e0e0',
               '& .MuiLinearProgress-bar': {
-                backgroundColor: getColor(item.color),
+                backgroundColor: getColorByValue(item.value),
               },
             }}
           />

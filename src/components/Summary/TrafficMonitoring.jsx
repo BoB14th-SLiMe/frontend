@@ -3,92 +3,130 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
-  // ⭐️ 토글 버튼 관련 임포트 제거
   useTheme,
 } from '@mui/material';
 import * as echarts from 'echarts';
 import DashboardBlock from '../DashboardBlock';
 
-// --- Mock 데이터 생성 함수 ---
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
-/** 1. 현재 트래픽 데이터 생성 (24시간 고정) */
-const generateCurrentData = () => {
-  const data = [];
+/** Fallback data generation */
+const generateFallbackData = () => {
+  const current = [];
+  const average = [];
+  const labels = [];
   const now = new Date();
-  const hours = 24; // 24시간 고정
 
-  for (let i = hours - 1; i >= 0; i--) {
+  for (let i = 23; i >= 0; i--) {
     const time = new Date(now.getTime() - i * 60 * 60 * 1000);
     const hour = time.getHours();
-    let baseValue = 20 + Math.random() * 10; 
+    let baseValue = 20 + Math.random() * 10;
     let isAttack = false;
 
     if (hour >= 9 && hour <= 11) {
       baseValue += Math.random() * 15;
     }
 
-    if (Math.random() < 0.05) { 
-      baseValue += 20 + Math.random() * 10; 
+    if (Math.random() < 0.05) {
+      baseValue += 20 + Math.random() * 10;
       isAttack = true;
     }
 
-    data.push({
+    current.push({
       time: time,
       value: Math.round(baseValue),
-      isAttack: isAttack, 
+      isAttack: isAttack,
     });
-  }
-  return data;
-};
 
-/** 2. 7일 평균 데이터 생성 (24시간 고정) */
-const generateAverageData = () => {
-  const data = [];
-  const now = new Date();
-  const hours = 24; 
-
-  for (let i = hours - 1; i >= 0; i--) {
-    const time = new Date(now.getTime() - i * 60 * 60 * 1000);
-    const hour = time.getHours();
-    let baseValue = 20; 
-
-    if (hour >= 9 && hour <= 11) {
-      baseValue += 5;
-    }
-
-    data.push({
+    average.push({
       time: time,
-      value: Math.round(baseValue + (Math.random() - 0.5) * 2), 
+      value: Math.round(20 + (Math.random() - 0.5) * 2),
     });
+
+    labels.push(hour.toString().padStart(2, '0') + '시');
   }
-  return data;
+
+  return { current, average, labels };
 };
 
-
-/** 3. 메인 컴포넌트 */
+/** Main component */
 const TrafficMonitoring = () => {
-  const theme = useTheme(); 
+  const theme = useTheme();
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
-  // ⭐️ timeRange 상태 제거
-  // const [timeRange, setTimeRange] = useState('24h'); 
   const [chartData, setChartData] = useState({ current: [], average: [], labels: [] });
+  const [loading, setLoading] = useState(true);
 
-  const attackBarColor = theme.palette.error.main || '#d32f2f'; 
-  const avgLineColor = theme.palette.success.main || '#2e7d32'; 
+  const attackBarColor = theme.palette.error.main || '#d32f2f';
+  const avgLineColor = theme.palette.success.main || '#2e7d32';
 
-  // 1. timeRange가 변경될 때마다 MOCK 데이터 재생성
+  // Fetch traffic data from API
   useEffect(() => {
-    // ⭐️ 24시간 고정 데이터로 생성
-    const current = generateCurrentData();
-    const average = generateAverageData(); 
+    const fetchTrafficData = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/traffic/monitoring`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
 
-    const labels = current.map((d, index) => {
-      return d.time.getHours().toString().padStart(2, '0') + '시'; 
-    });
+        const current = [];
+        const average = [];
+        const labels = [];
 
-    setChartData({ current, average, labels });
-  }, []); // ⭐️ 의존성 배열을 비워 마운트 시 1회만 실행
+        // Process current traffic data (last 24 hours)
+        (data.current || []).forEach((item, index) => {
+          const time = new Date(item.timestamp || item.time);
+          const hour = time.getHours();
+
+          // Check if this hour has threats
+          const threatItem = (data.threats || []).find(t => {
+            const threatTime = new Date(t.timestamp || t.time);
+            return threatTime.getHours() === hour;
+          });
+
+          current.push({
+            time: time,
+            value: item.traffic_mbps || item.value || 0,
+            isAttack: (threatItem && (threatItem.count || 0) > 0) || false,
+          });
+
+          labels.push(hour.toString().padStart(2, '0') + '시');
+        });
+
+        // Process average traffic data
+        (data.average || []).forEach(item => {
+          const time = new Date(item.timestamp || item.time);
+          average.push({
+            time: time,
+            value: item.traffic_mbps || item.value || 0,
+          });
+        });
+
+        // Ensure we have data for all 24 hours
+        if (current.length === 0) {
+          const fallback = generateFallbackData();
+          setChartData(fallback);
+        } else {
+          setChartData({ current, average, labels });
+        }
+
+        setLoading(false);
+      } catch (error) {
+        console.error('❌ 트래픽 모니터링 데이터 로드 실패:', error);
+        // Use fallback data on error
+        const fallback = generateFallbackData();
+        setChartData(fallback);
+        setLoading(false);
+      }
+    };
+
+    fetchTrafficData();
+
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchTrafficData, 30000);
+    return () => clearInterval(interval);
+  }, [])
 
   // 2. ECharts 초기화 및 데이터 업데이트
   useEffect(() => {
