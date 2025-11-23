@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import DashboardBlock from '../DashboardBlock'; 
 import { Box, Stack, Typography, Divider } from '@mui/material';
 import { useNetworkDeviceConfig } from '../../hooks/NetworkDeviceConfigContext';
@@ -11,25 +11,25 @@ import SpeedIcon from '@mui/icons-material/Speed';
 import LinkIcon from '@mui/icons-material/Link';
 
 // ------------------------------------
-// (축소된) 내부 컴포넌트 (변경 없음)
+// (축소된) 내부 컴포넌트 (React.memo로 최적화)
 // ------------------------------------
 
-const DeviceCard = ({ name, ip, icon, color }) => {
-    const Icon = icon === 'ComputerIcon' ? ComputerIcon : 
+const DeviceCard = React.memo(({ name, ip, icon, color }) => {
+    const Icon = icon === 'ComputerIcon' ? ComputerIcon :
                  icon === 'CompareArrowsIcon' ? CompareArrowsIcon : DataObjectIcon;
-    
+
     return (
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 80 }}> 
-            <Box sx={{ 
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 80 }}>
+            <Box sx={{
                 backgroundColor: color,
-                borderRadius: 2, 
-                p: 1, 
-                mb: 0.5, 
-                width: 48, 
-                height: 48, 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center' 
+                borderRadius: 2,
+                p: 1,
+                mb: 0.5,
+                width: 48,
+                height: 48,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
             }}>
                 <Icon sx={{ color: 'white', fontSize: 28 }} />
             </Box>
@@ -39,7 +39,7 @@ const DeviceCard = ({ name, ip, icon, color }) => {
             {ip && <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>{ip}</Typography>}
         </Box>
     );
-};
+});
 
 const InfoItem = ({ icon: Icon, label, value, color }) => (
     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -90,17 +90,20 @@ const LayerSection = ({ label, children, showDivider = true, alignItems = "flex-
 );
 
 // ------------------------------------
-// 메인 컴포넌트 (⭐️ 로직 수정)
+// 메인 컴포넌트 (⭐️ 로직 수정 + React.memo로 깜빡임 방지)
 // ------------------------------------
-export default function NetworkDevices() {
+const NetworkDevices = React.memo(() => {
     const { deviceConfig } = useNetworkDeviceConfig();
 
-    // 1. 4개씩 끊어서 표시하기 위한 'chunking' 로직
-    const chunkedDevices = [];
-    const CHUNK_SIZE = 4; // 한 줄에 4개씩
-    for (let i = 0; i < deviceConfig.devices.length; i += CHUNK_SIZE) {
-        chunkedDevices.push(deviceConfig.devices.slice(i, i + CHUNK_SIZE));
-    }
+    // 1. 4개씩 끊어서 표시하기 위한 'chunking' 로직 (useMemo로 메모이제이션)
+    const chunkedDevices = useMemo(() => {
+        const chunks = [];
+        const CHUNK_SIZE = 4; // 한 줄에 4개씩
+        for (let i = 0; i < deviceConfig.devices.length; i += CHUNK_SIZE) {
+            chunks.push(deviceConfig.devices.slice(i, i + CHUNK_SIZE));
+        }
+        return chunks;
+    }, [deviceConfig.devices]);
     
     return (
         <DashboardBlock 
@@ -207,4 +210,8 @@ export default function NetworkDevices() {
             </Stack>
         </DashboardBlock>
     );
-}
+});
+
+NetworkDevices.displayName = 'NetworkDevices';
+
+export default NetworkDevices;
