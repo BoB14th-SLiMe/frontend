@@ -1,91 +1,44 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Box, ToggleButtonGroup, ToggleButton } from '@mui/material';
 import * as echarts from 'echarts';
 import DashboardBlock from '../DashboardBlock';
-
-// Mock 데이터 생성 함수 (24시간용)
-const generate24HourData = () => {
-    const data = [];
-    const now = new Date();
-    
-    for (let i = 23; i >= 0; i--) {
-        const time = new Date(now.getTime() - i * 60 * 60 * 1000);
-        const hour = time.getHours();
-        
-        // 시간대별 패턴 생성 (오전 9-11시에 피크)
-        let baseValue;
-        if (hour >= 9 && hour <= 11) {
-            baseValue = 70 + Math.random() * 30; // 70-100
-        } else if (hour >= 7 && hour <= 14) {
-            baseValue = 40 + Math.random() * 40; // 40-80
-        } else if (hour >= 0 && hour <= 6) {
-            baseValue = 10 + Math.random() * 20; // 10-30
-        } else {
-            baseValue = 30 + Math.random() * 30; // 30-60
-        }
-        
-        data.push({
-            time: time,
-            value: Math.round(baseValue)
-        });
-    }
-    
-    return data;
-};
-
-// Mock 데이터 생성 함수 (7일용)
-const generate7DayData = () => {
-    const data = [];
-    const now = new Date();
-    
-    // 7일 * 24시간 = 168개 데이터 포인트
-    for (let i = 167; i >= 0; i--) {
-        const time = new Date(now.getTime() - i * 60 * 60 * 1000);
-        const hour = time.getHours();
-        const dayOfWeek = time.getDay();
-        
-        // 평일/주말 및 시간대별 패턴
-        let baseValue;
-        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-        
-        if (isWeekend) {
-            baseValue = 20 + Math.random() * 30; // 주말은 낮음
-        } else if (hour >= 9 && hour <= 17) {
-            baseValue = 50 + Math.random() * 40; // 평일 업무시간
-        } else {
-            baseValue = 20 + Math.random() * 30;
-        }
-        
-        data.push({
-            time: time,
-            value: Math.round(baseValue)
-        });
-    }
-    
-    return data;
-};
+import { threatApi } from '../../service/apiService';
 
 const RealtimeThreatChart = () => {
     const chartRef = useRef(null);
     const chartInstance = useRef(null);
     const [timeRange, setTimeRange] = useState('24h'); // '24h' or '7d'
     const [chartData, setChartData] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    // 1시간마다 데이터 업데이트
+    // API에서 데이터 가져오기
     useEffect(() => {
-        const updateData = () => {
-            if (timeRange === '24h') {
-                setChartData(generate24HourData());
-            } else {
-                setChartData(generate7DayData());
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                const response = await threatApi.getThreatTimeline(timeRange);
+                const apiData = response.data.data || [];
+
+                // API 데이터를 차트 형식으로 변환
+                const transformedData = apiData.map(item => ({
+                    time: new Date(item.timestamp || item.time),
+                    value: item.value || 0
+                }));
+
+                setChartData(transformedData);
+            } catch (error) {
+                console.error('❌ 실시간 위협 수 데이터 로드 실패:', error);
+                // 에러 시 빈 데이터
+                setChartData([]);
+            } finally {
+                setLoading(false);
             }
         };
 
-        // 초기 데이터 로드
-        updateData();
+        fetchData();
 
-        // 1시간마다 업데이트
-        const interval = setInterval(updateData, 60 * 60 * 1000);
+        // 1분마다 데이터 업데이트
+        const interval = setInterval(fetchData, 60000);
 
         return () => clearInterval(interval);
     }, [timeRange]);
@@ -113,6 +66,10 @@ const RealtimeThreatChart = () => {
                 return '';
             }
         });
+
+        // 최대값 동적 계산 (데이터 최대값의 1.2배)
+        const maxValue = Math.max(...chartData.map(d => d.value));
+        const yAxisMax = Math.ceil(maxValue * 1.2 / 10) * 10; // 10 단위로 올림
 
         // ECharts 옵션
         const option = {
@@ -149,8 +106,7 @@ const RealtimeThreatChart = () => {
             yAxis: {
                 type: 'value',
                 min: 0,
-                max: 100,
-                interval: 25,
+                max: yAxisMax || 100, // 동적 최대값, 데이터 없으면 100
                 axisLine: {
                     show: false
                 },
@@ -224,7 +180,7 @@ const RealtimeThreatChart = () => {
                     const day = time.getDate();
                     const hour = time.getHours();
                     const value = params[0].value;
-                    
+
                     return `${month}/${day} ${hour.toString().padStart(2, '0')}:00<br/>위협 수: ${value}`;
                 }
             }
@@ -285,18 +241,18 @@ const RealtimeThreatChart = () => {
     );
 
     return (
-        <DashboardBlock 
+        <DashboardBlock
             title="실시간 위협 수"
             controls={toggleButtons}
             sx={{ height: '100%', flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
         >
-            <Box 
-                ref={chartRef} 
-                sx={{ 
-                    width: '100%', 
+            <Box
+                ref={chartRef}
+                sx={{
+                    width: '100%',
                     flex: 1,
                     minHeight: 0
-                }} 
+                }}
             />
         </DashboardBlock>
     );

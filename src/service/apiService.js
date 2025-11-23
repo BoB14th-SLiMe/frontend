@@ -69,17 +69,21 @@ export const dashboardApi = {
 // Threat APIs
 // ============================================
 export const threatApi = {
-  filterThreats: (filters) => 
+  filterThreats: (filters) =>
     apiClient.get('/threats/filter', { params: filters }),
-  getThreatDetail: (threatId) => 
+  getThreatDetail: (threatId) =>
     apiClient.get(`/threats/${threatId}/detail`),
-  saveAdminAction: (threatId, data) => 
+  saveAdminAction: (threatId, data) =>
     apiClient.post(`/threats/${threatId}/admin-action`, data),
-  getThreatTimeline: (range = '24h') => 
-    apiClient.get('/threats/timeline', { params: { range } }),
-  getThreatStatistics: () => 
+  getThreatTimeline: (range = '24h') =>
+    apiClient.get('/dashboard/threats/timeline', { params: { range } }),
+  getThreatTopTypes: () =>
+    apiClient.get('/dashboard/threats/top-types'),
+  getThreatsByLevel: () =>
+    apiClient.get('/dashboard/threats/by-level'),
+  getThreatStatistics: () =>
     apiClient.get('/threats/statistics'),
-  getThreats: (page = 0, size = 20) => 
+  getThreats: (page = 0, size = 20) =>
     apiClient.get('/threats', { params: { page, size } }),
 };
 

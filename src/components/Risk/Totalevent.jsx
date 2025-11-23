@@ -1,21 +1,66 @@
 // src/components/Risk/ThreatGradeIncidence.jsx
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardBlock from '../DashboardBlock';
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, CircularProgress } from '@mui/material';
 import ReactECharts from 'echarts-for-react';
-
-const barData = [
-    { label: '경고', value: 21, color: '#FFA726' },
-    { label: '긴급', value: 2, color: '#E91E63' }
-];
-
-const tableData = [
-    { ip: 'PLC-001', count: 30 },
-    { ip: 'PLC-002', count: 10 },
-    { ip: 'PLC-003', count: 5 },
-];
+import { threatApi } from '../../service/apiService';
 
 export default function ThreatGradeIncidence() {
+    const [barData, setBarData] = useState([
+        { label: '경고', value: 0, color: '#FFA726' },
+        { label: '긴급', value: 0, color: '#E91E63' }
+    ]);
+    const [tableData, setTableData] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                const response = await threatApi.getThreatsByLevel();
+                const data = response.data;
+
+                // 막대 그래프 데이터 업데이트
+                setBarData([
+                    { label: '경고', value: data.attention || 0, color: '#FFA726' },
+                    { label: '긴급', value: data.warning || 0, color: '#E91E63' }
+                ]);
+
+                // 테이블 데이터 업데이트 (상위 3개 목적지)
+                const destinations = (data.destinations || []).map(dest => ({
+                    ip: dest.ip,
+                    count: parseInt(dest.count) || 0
+                }));
+                setTableData(destinations);
+
+            } catch (error) {
+                console.error('❌ 위협 등급별 사건 수 데이터 로드 실패:', error);
+                // 에러 시 fallback 데이터
+                setBarData([
+                    { label: '경고', value: 21, color: '#FFA726' },
+                    { label: '긴급', value: 2, color: '#E91E63' }
+                ]);
+                setTableData([
+                    { ip: 'PLC-001', count: 30 },
+                    { ip: 'PLC-002', count: 10 },
+                    { ip: 'PLC-003', count: 5 },
+                ]);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+
+        // 1분마다 갱신
+        const interval = setInterval(fetchData, 60000);
+
+        return () => clearInterval(interval);
+    }, []);
+    // 동적 x축 최대값 계산
+    const maxValue = Math.max(...barData.map(item => item.value));
+    const xAxisMax = Math.ceil(maxValue * 1.2 / 10) * 10 || 25; // 데이터의 1.2배, 최소 25
+
     const option = {
         animation: false,
         grid: {
@@ -28,7 +73,7 @@ export default function ThreatGradeIncidence() {
         xAxis: {
             type: 'value',
             show: false,
-            max: 25
+            max: xAxisMax
         },
         yAxis: {
             type: 'category',
