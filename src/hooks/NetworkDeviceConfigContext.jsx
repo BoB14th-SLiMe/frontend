@@ -32,11 +32,15 @@ export const NetworkDeviceConfigProvider = ({ children }) => {
   const [plcDevices, setPlcDevices] = useState([]);
   const [networkStats, setNetworkStats] = useState({ pps: 0, connections: 0 });
   const [loading, setLoading] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // API에서 데이터 가져오기
   const fetchDeviceData = async () => {
     try {
-      setLoading(true);
+      // 초기 로딩일 때만 loading을 true로 설정
+      if (isInitialLoad) {
+        setLoading(true);
+      }
 
       // HMI 장비 조회
       const hmiResponse = await assetApi.getAssetsByType('hmi');
@@ -76,7 +80,11 @@ export const NetworkDeviceConfigProvider = ({ children }) => {
     } catch (error) {
       console.error('네트워크 장치 데이터 로드 실패:', error);
     } finally {
-      setLoading(false);
+      // 초기 로딩 완료 후에는 loading을 false로 유지
+      if (isInitialLoad) {
+        setLoading(false);
+        setIsInitialLoad(false);
+      }
     }
   };
 
