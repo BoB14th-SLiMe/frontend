@@ -90,7 +90,7 @@ export const NetworkDeviceConfigProvider = ({ children }) => {
       // 네트워크 통계 조회
       const statsResponse = await trafficApi.getNetworkStats();
       const stats = {
-        pps: statsResponse.data.pps || 0,
+        pps: statsResponse.data.packetsPerSecond || statsResponse.data.pps || 0,
         connections: statsResponse.data.connections || 0
       };
       console.log('✅ 네트워크 통계 조회 완료:', stats);
