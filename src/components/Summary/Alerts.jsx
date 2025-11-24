@@ -1,153 +1,76 @@
 import React, { useState, useEffect } from 'react';
 import DashboardBlock from '../DashboardBlock';
-import { Box, Typography, Button, Divider, CircularProgress } from '@mui/material';
-import WarningIcon from '@mui/icons-material/Warning';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import { xaiApi } from '../../service/apiService'; 
+import { Box, Typography, Chip, CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
+import { threatApi } from '../../service/apiService';
 
-// 1. 개별 알림 항목 컴포넌트
-const AlertItem = ({ time, message, status, risk, onConfirm }) => {
-    
-    let Icon, iconColor, riskComponent = null, actionButton = null;
+// 위협 수준에 따른 색상 및 텍스트 반환
+const getThreatLevelStyle = (threatLevel) => {
+  const level = threatLevel?.toLowerCase();
+  if (level === 'warning') {
+    return { color: '#ef5350', text: '긴급' };
+  } else if (level === 'attention') {
+    return { color: '#ff9800', text: '공격' };
+  }
+  return { color: '#9e9e9e', text: '정보' };
+};
 
-    if (status === 'analyzing') {
-        Icon = WarningIcon; 
-        iconColor = '#ef5350'; 
-        riskComponent = ( 
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Typography variant="body1" color="text.secondary" sx={{ mr: 1 }}>
-                    예상 위험도:
-                </Typography>
-                <Typography variant="body1" fontWeight="bold" color="#ef5350">
-                    {risk}
-                </Typography>
-            </Box>
-        );
-    } else if (status === 'report_red') {
-        Icon = WarningIcon;
-        iconColor = '#ef5350'; 
-        actionButton = (
-            <Button variant="contained" size="medium" onClick={onConfirm} sx={{ 
-                minWidth: '60px', 
-                backgroundColor: '#f5f5f5', 
-                color: '#333', 
-                boxShadow: 'none',
-                '&:hover': {
-                    backgroundColor: '#e0e0e0',
-                    boxShadow: 'none',
-                }
-            }}>
-                확인
-            </Button>
-        );
-    } else if (status === 'report_yellow') {
-        Icon = WarningIcon;
-        iconColor = '#ffb300'; // 주황/노란색
-        actionButton = (
-            <Button variant="contained" size="medium" onClick={onConfirm} sx={{ 
-                minWidth: '60px', 
-                backgroundColor: '#f5f5f5', 
-                color: '#333', 
-                boxShadow: 'none',
-                '&:hover': {
-                    backgroundColor: '#e0e0e0',
-                    boxShadow: 'none',
-                }
-            }}>
-                확인
-            </Button>
-        );
-    } else if (status === 'completed') {
-        Icon = CheckCircleIcon;
-        iconColor = '#4caf50'; // 초록색
-    }
-
-    return (
-        <Box 
-            sx={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'space-between',
-                padding: '12px 0' 
-            }}
-        >
-            <Box sx={{ display: 'flex', alignItems: 'center', minWidth: '80px' }}>
-                <Typography variant="body1" color="text.secondary" sx={{ mr: 2 }}>
-                    {time}
-                </Typography>
-                <Icon sx={{ color: iconColor, fontSize: 35, mr: 1.5 }} />
-                <Typography variant="h6" sx={{ flexGrow: 1 }}>
-                    {message}
-                </Typography>
-            </Box>
-
-            <Box sx={{ display: 'flex', alignItems: 'center', minWidth: '120px', justifyContent: 'flex-end' }}>
-                {riskComponent}
-                {actionButton}
-            </Box>
-        </Box>
-    );
+// 자산 이름 포맷팅 (예: 192.168.10.81 -> HMI2(Labeling))
+const getAssetName = (ip) => {
+  // 실제로는 자산 매핑 테이블을 사용해야 하지만, 여기서는 간단히 처리
+  const assetMap = {
+    '192.168.10.81': 'HMI2(Labeling)',
+    '192.168.10.82': 'HMI1(Vision)',
+    '192.168.10.10': 'LS Electric PLC',
+  };
+  return assetMap[ip] || ip;
 };
 
 
-// 2. 메인 컴포넌트 (Alerts.jsx)
+// 메인 컴포넌트
 export default function Alerts({ onAlertConfirm }) {
-  const [alerts, setAlerts] = useState([]);
+  const [threats, setThreats] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchAlerts = async () => {
+  const fetchThreats = async () => {
     try {
       setLoading(true);
-      const response = await xaiApi.getRecentAnalyses();
+      const maxItems = 20;
 
-      // XAI 데이터를 알림 형식으로 변환 (response.data는 이미 배열)
-      const xaiData = Array.isArray(response.data) ? response.data : [];
-      const formattedAlerts = xaiData.slice(0, 5).map((xai, index) => {
-        const time = new Date(xai.timestamp).toLocaleTimeString('ko-KR', {
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit'
-        });
-
-        let status = 'analyzing';
-        let message = `${xai.threatType} 탐지`;
-
-        // 상태에 따라 메시지와 상태 결정
-        if (xai.status === '확인' || xai.status === '해결') {
-          status = 'completed';
-          message = `${xai.threatType} 조치 완료`;
-        } else if (xai.status === '분석중') {
-          status = 'analyzing';
-          message = `${xai.threatType} 분석 중...`;
-        } else {
-          status = index % 2 === 0 ? 'report_red' : 'report_yellow';
-          message = `${xai.threatType} 보고서 작성 완료`;
-        }
-
-        return {
-          id: xai.id,
-          time,
-          message,
-          status,
-          risk: '85%', // 고정값 (실제로는 위협 점수 계산 필요)
-        };
+      // API가 배열을 직접 반환하고, 상태값이 영어로 옴 (new, analyzing, confirmed 등)
+      // 1. 먼저 모든 위협 가져오기
+      const response = await threatApi.getThreats({
+        page: 0,
+        size: 100  // 충분한 수를 가져와서 클라이언트에서 필터링
       });
 
-      setAlerts(formattedAlerts);
+      // response.data가 배열인 경우 처리
+      let allThreats = Array.isArray(response.data) ? response.data : [];
+
+      // 2. 클라이언트에서 상태별로 필터링 및 정렬
+      // 백엔드가 'new', 'analyzing', 'confirmed' 등 영어로 반환
+      const newThreats = allThreats.filter(t => t.status?.toLowerCase() === 'new');
+      const otherThreats = allThreats.filter(t =>
+        t.status?.toLowerCase() !== 'new' &&
+        ['analyzing', 'confirmed'].includes(t.status?.toLowerCase())
+      );
+
+      // 3. 신규를 우선 배치하고 최대 개수 제한
+      const finalThreats = [...newThreats, ...otherThreats].slice(0, maxItems);
+
+      setThreats(finalThreats);
     } catch (error) {
-      console.error('알림 데이터 조회 실패:', error);
-      // 에러 발생 시 빈 배열
-      setAlerts([]);
+      console.error('위협 데이터 조회 실패:', error);
+      setThreats([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchAlerts();
+    fetchThreats();
 
-    // 1분마다 자동 갱신
-    const intervalId = setInterval(fetchAlerts, 60000);
+    // 30초마다 자동 갱신
+    const intervalId = setInterval(fetchThreats, 30000);
 
     return () => clearInterval(intervalId);
   }, []);
@@ -164,24 +87,94 @@ export default function Alerts({ onAlertConfirm }) {
 
   return (
     <DashboardBlock title="이상 탐지 및 알람" sx={{ height: '100%', flex: 5 }}>
-      <Box sx={{ mt: 0, '& > div:not(:last-child)': { borderBottom: '1px solid #eee' }, pb: 1 }}>
-        {alerts.length === 0 ? (
-          <Box sx={{ p: 4, textAlign: 'center', color: 'text.secondary' }}>
-            <Typography>현재 알림이 없습니다.</Typography>
-          </Box>
-        ) : (
-          alerts.map((alert) => (
-            <AlertItem
-              key={alert.id}
-              time={alert.time}
-              message={alert.message}
-              status={alert.status}
-              risk={alert.risk}
-              onConfirm={() => onAlertConfirm?.(alert.id)}
-            />
-          ))
-        )}
-      </Box>
+      <TableContainer sx={{ maxHeight: 400 }}>
+        <Table stickyHeader size="small">
+          <TableHead>
+            <TableRow>
+              <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f5f5f5', width: '12%' }}>시간</TableCell>
+              <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f5f5f5', width: '12%' }}>분류</TableCell>
+              <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f5f5f5', width: '30%' }}>경로</TableCell>
+              <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f5f5f5', width: '10%' }}>수준</TableCell>
+              <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f5f5f5', width: '10%' }}>타입</TableCell>
+              <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f5f5f5', width: '8%' }}>심각도</TableCell>
+              <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f5f5f5', width: '10%' }}>상태</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {threats.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} align="center" sx={{ py: 4, color: 'text.secondary' }}>
+                  현재 알림이 없습니다.
+                </TableCell>
+              </TableRow>
+            ) : (
+              threats.map((threat) => {
+                // API 응답 필드명 매핑
+                const threatLevel = threat.threat_level || threat.threatLevel;
+                const sourceIp = threat.src_ip || threat.sourceIp;
+                const destIp = threat.dst_ip || threat.destinationIp || threat.destIp;
+                const threatType = threat.threat_type || threat.threatType || threat.detection_engine || 'DL';
+                const timestamp = new Date(threat['@timestamp'] || threat.timestamp || threat.eventTimestamp);
+                const status = threat.status;
+                const threatId = threat.threat_id || threat.id;
+                const sourceAssetName = threat.source_asset_name || threat.sourceAssetName;
+                const targetAssetName = threat.target_asset_name || threat.targetAssetName;
+
+                const levelStyle = getThreatLevelStyle(threatLevel);
+                const timeStr = timestamp.toLocaleString('ko-KR', {
+                  month: '2-digit',
+                  day: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit',
+                  hour12: false
+                }).replace(/\. /g, '.').replace(/\./g, '/').replace('/', '.').substring(0, 17);
+
+                // 상태 한글 변환
+                const statusKorean = status === 'new' ? '신규' :
+                                    status === 'analyzing' ? '분석중' :
+                                    status === 'confirmed' ? '확인' :
+                                    status === 'resolved' ? '조치완료' : status;
+
+                return (
+                  <TableRow key={threatId} hover>
+                    <TableCell sx={{ fontSize: '0.875rem' }}>{timeStr}</TableCell>
+                    <TableCell sx={{ fontSize: '0.875rem' }}>위협탐지</TableCell>
+                    <TableCell sx={{ fontSize: '0.875rem' }}>
+                      {sourceAssetName || getAssetName(sourceIp)} ({sourceIp}) → {targetAssetName || getAssetName(destIp)}
+                    </TableCell>
+                    <TableCell>
+                      <Typography
+                        sx={{
+                          fontSize: '0.875rem',
+                          fontWeight: 'bold',
+                          color: levelStyle.color
+                        }}
+                      >
+                        {levelStyle.text}
+                      </Typography>
+                    </TableCell>
+                    <TableCell sx={{ fontSize: '0.875rem' }}>{threatType}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={statusKorean}
+                        size="small"
+                        sx={{
+                          fontSize: '0.75rem',
+                          height: '22px',
+                          backgroundColor: status === 'new' ? '#e3f2fd' : '#fff3e0',
+                          color: status === 'new' ? '#1976d2' : '#f57c00'
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ fontSize: '0.875rem' }}>{statusKorean}</TableCell>
+                  </TableRow>
+                );
+              })
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
     </DashboardBlock>
   );
 }

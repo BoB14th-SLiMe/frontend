@@ -83,8 +83,8 @@ export const threatApi = {
     apiClient.get('/dashboard/threats/by-level'),
   getThreatStatistics: () =>
     apiClient.get('/threats/statistics'),
-  getThreats: (page = 0, size = 20) =>
-    apiClient.get('/threats', { params: { page, size } }),
+  getThreats: (params) =>
+    apiClient.get('/threats', { params }),
 };
 
 // ============================================
