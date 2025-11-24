@@ -38,8 +38,21 @@ export default function WeeklyProtocol() {
         const fetchWeeklyProtocol = async () => {
             try {
                 setLoading(true);
-                const response = await protocolApi.getWeeklyProtocol();
-                const dailyData = response.data.dailyData || [];
+
+                // 더미 데이터 생성 (7일)
+                const dummyData = {
+                    dailyData: [
+                        { date: '11.18', total: 1500, protocols: { 'Modbus': 450, 'TCP': 380, 'UDP': 320, 'HTTP': 200, 'Other': 150 } },
+                        { date: '11.19', total: 1650, protocols: { 'Modbus': 520, 'TCP': 410, 'UDP': 340, 'HTTP': 220, 'Other': 160 } },
+                        { date: '11.20', total: 1800, protocols: { 'Modbus': 580, 'TCP': 440, 'UDP': 380, 'HTTP': 240, 'Other': 160 } },
+                        { date: '11.21', total: 1700, protocols: { 'Modbus': 490, 'TCP': 450, 'UDP': 360, 'HTTP': 250, 'Other': 150 } },
+                        { date: '11.22', total: 1900, protocols: { 'Modbus': 610, 'TCP': 480, 'UDP': 390, 'HTTP': 260, 'Other': 160 } },
+                        { date: '11.23', total: 2100, protocols: { 'Modbus': 680, 'TCP': 520, 'UDP': 420, 'HTTP': 280, 'Other': 200 } },
+                        { date: '11.24', total: 1950, protocols: { 'Modbus': 620, 'TCP': 490, 'UDP': 400, 'HTTP': 270, 'Other': 170 } }
+                    ]
+                };
+
+                const dailyData = dummyData.dailyData;
 
                 // 날짜와 프로토콜 데이터 추출
                 const dates = dailyData.map(d => d.date);

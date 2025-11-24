@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { assetApi, trafficApi } from '../service/apiService';
+import { assetApi, trafficApi, threatApi } from '../service/apiService';
 
 const NetworkDeviceConfigContext = createContext();
 
@@ -11,20 +11,17 @@ export const useNetworkDeviceConfig = () => {
   return context;
 };
 
-// 상태에 따른 색상 결정
-const getColorByStatus = (status) => {
-  switch (status?.toLowerCase()) {
-    case 'active':
-    case 'online':
-      return '#66bb6a'; // 초록
-    case 'warning':
-      return '#ff9800'; // 주황
-    case 'error':
-    case 'critical':
-      return '#ef5350'; // 빨강
-    default:
-      return '#42a5f5'; // 파랑
+// 위협 레벨에 따른 색상 결정
+const getColorByThreatLevel = (threatLevel) => {
+  if (!threatLevel) return '#42a5f5'; // 파랑 (정상)
+
+  const level = threatLevel.toLowerCase();
+  if (level === 'warning') {
+    return '#ef5350'; // 빨강 (긴급)
+  } else if (level === 'attention') {
+    return '#ff9800'; // 주황 (경고)
   }
+  return '#42a5f5'; // 파랑 (정상)
 };
 
 // PPS 값을 읽기 쉽게 포맷팅
@@ -57,6 +54,31 @@ export const NetworkDeviceConfigProvider = ({ children }) => {
         setLoading(true);
       }
 
+      // 신규 위협 데이터 조회 (IP별 최고 위협 레벨)
+      const threatResponse = await threatApi.getThreats({ page: 0, size: 100 });
+      const threats = Array.isArray(threatResponse.data) ? threatResponse.data : [];
+
+      // IP별 최고 위협 레벨 맵 생성
+      const threatLevelByIp = {};
+      threats.forEach(threat => {
+        if (threat.status?.toLowerCase() === 'new') {
+          const srcIp = threat.src_ip || threat.sourceIp;
+          const dstIp = threat.dst_ip || threat.destinationIp;
+          const level = threat.threat_level || threat.threatLevel;
+
+          [srcIp, dstIp].forEach(ip => {
+            if (ip && level) {
+              // warning이 attention보다 우선순위 높음
+              if (!threatLevelByIp[ip] || level === 'warning') {
+                threatLevelByIp[ip] = level;
+              }
+            }
+          });
+        }
+      });
+
+      console.log('🚨 IP별 위협 레벨:', threatLevelByIp);
+
       // HMI 장비 조회
       const hmiResponse = await assetApi.getAssetsByType('hmi');
       const hmiData = hmiResponse.data
@@ -66,7 +88,7 @@ export const NetworkDeviceConfigProvider = ({ children }) => {
           name: asset.name,
           ip: asset.ipAddress,
           status: asset.status,
-          color: getColorByStatus(asset.status),
+          color: getColorByThreatLevel(threatLevelByIp[asset.ipAddress]),
           icon: 'ComputerIcon'
         }));
       console.log('✅ HMI 장비 조회 완료:', hmiData.length, '개');
@@ -81,7 +103,7 @@ export const NetworkDeviceConfigProvider = ({ children }) => {
           name: asset.name,
           ip: asset.ipAddress,
           status: asset.status,
-          color: getColorByStatus(asset.status),
+          color: getColorByThreatLevel(threatLevelByIp[asset.ipAddress]),
           icon: 'DataObjectIcon'
         }));
       console.log('✅ PLC 장비 조회 완료:', plcData.length, '개');

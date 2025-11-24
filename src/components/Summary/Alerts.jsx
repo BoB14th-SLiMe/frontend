@@ -46,15 +46,31 @@ export default function Alerts({ onAlertConfirm }) {
       // response.data가 배열인 경우 처리
       let allThreats = Array.isArray(response.data) ? response.data : [];
 
-      // 2. 클라이언트에서 상태별로 필터링 및 정렬
-      // 백엔드가 'new', 'analyzing', 'confirmed' 등 영어로 반환
-      const newThreats = allThreats.filter(t => t.status?.toLowerCase() === 'new');
-      const otherThreats = allThreats.filter(t =>
+      // 2. 각 위협에 대해 XAI 분석 여부 확인
+      const threatsWithXai = await Promise.all(
+        allThreats.map(async (threat) => {
+          try {
+            const threatId = threat.threat_id || threat.id;
+            // XAI 분석 존재 여부 확인 (간단히 API 호출)
+            const xaiResponse = await threatApi.getThreatDetail(threatId);
+            return {
+              ...threat,
+              hasXaiAnalysis: xaiResponse?.data?.hasXaiAnalysis || false
+            };
+          } catch (error) {
+            return { ...threat, hasXaiAnalysis: false };
+          }
+        })
+      );
+
+      // 3. 클라이언트에서 상태별로 필터링 및 정렬
+      const newThreats = threatsWithXai.filter(t => t.status?.toLowerCase() === 'new');
+      const otherThreats = threatsWithXai.filter(t =>
         t.status?.toLowerCase() !== 'new' &&
         ['analyzing', 'confirmed'].includes(t.status?.toLowerCase())
       );
 
-      // 3. 신규를 우선 배치하고 최대 개수 제한
+      // 4. 신규를 우선 배치하고 최대 개수 제한
       const finalThreats = [...newThreats, ...otherThreats].slice(0, maxItems);
 
       setThreats(finalThreats);
@@ -141,7 +157,7 @@ export default function Alerts({ onAlertConfirm }) {
 
                 {/* 경로 */}
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                  {sourceAssetName || getAssetName(sourceIp)} ({sourceIp}) → {targetAssetName || getAssetName(destIp)}
+                  {sourceAssetName || getAssetName(sourceIp)} ({sourceIp}) → {targetAssetName || getAssetName(destIp)} ({destIp})
                 </Typography>
 
                 {/* 레벨, 탐지엔진, 상태, 버튼 */}
@@ -178,24 +194,26 @@ export default function Alerts({ onAlertConfirm }) {
                     {statusKorean}
                   </Typography>
 
-                  {/* 분석중 버튼 (상태가 신규 또는 분석중일 때만) */}
+                  {/* XAI 매핑 여부에 따라 버튼 표시 */}
                   {(status === 'new' || status === 'analyzing') && (
                     <Button
                       variant="contained"
                       size="small"
                       sx={{
                         ml: 'auto',
-                        backgroundColor: '#1976d2',
+                        backgroundColor: threat.hasXaiAnalysis ? '#1976d2' : '#9e9e9e',
                         color: 'white',
                         fontSize: '0.75rem',
                         textTransform: 'none',
                         borderRadius: '16px',
                         minWidth: '70px',
                         height: '28px',
-                        '&:hover': { backgroundColor: '#1565c0' }
+                        '&:hover': {
+                          backgroundColor: threat.hasXaiAnalysis ? '#1565c0' : '#757575'
+                        }
                       }}
                     >
-                      분석하기
+                      {threat.hasXaiAnalysis ? '상세보기' : '분석중'}
                     </Button>
                   )}
                 </Box>
