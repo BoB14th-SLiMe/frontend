@@ -46,22 +46,15 @@ export default function Alerts({ onAlertConfirm }) {
       // response.data가 배열인 경우 처리
       let allThreats = Array.isArray(response.data) ? response.data : [];
 
-      // 2. 각 위협에 대해 XAI 분석 여부 확인
-      const threatsWithXai = await Promise.all(
-        allThreats.map(async (threat) => {
-          try {
-            const threatId = threat.threat_id || threat.id;
-            // XAI 분석 존재 여부 확인 (간단히 API 호출)
-            const xaiResponse = await threatApi.getThreatDetail(threatId);
-            return {
-              ...threat,
-              hasXaiAnalysis: xaiResponse?.data?.hasXaiAnalysis || false
-            };
-          } catch (error) {
-            return { ...threat, hasXaiAnalysis: false };
-          }
-        })
-      );
+      // 2. 각 위협에 대해 XAI 분석 여부 확인 (threat_index로)
+      const threatsWithXai = allThreats.map((threat) => {
+        // threat_index가 있으면 XAI 분석이 완료된 것으로 간주
+        const threatIndex = threat.threat_index || threat.threatIndex;
+        return {
+          ...threat,
+          hasXaiAnalysis: threatIndex != null && threatIndex !== undefined
+        };
+      });
 
       // 3. 클라이언트에서 상태별로 필터링 및 정렬
       const newThreats = threatsWithXai.filter(t => t.status?.toLowerCase() === 'new');
@@ -140,28 +133,34 @@ export default function Alerts({ onAlertConfirm }) {
               <Box
                 key={threatId}
                 sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
                   p: 2,
                   borderBottom: index < threats.length - 1 ? '1px solid #eee' : 'none',
                   '&:hover': { backgroundColor: '#f9f9f9' }
                 }}
               >
-                {/* 시간 */}
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                  {timeStr}
-                </Typography>
+                {/* 왼쪽: 시간, 제목, 경로 */}
+                <Box sx={{ flex: 1, minWidth: 0, mr: 2 }}>
+                  {/* 시간 */}
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.3 }}>
+                    {timeStr}
+                  </Typography>
 
-                {/* 위협 탐지 제목 */}
-                <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 0.5 }}>
-                  위협 탐지
-                </Typography>
+                  {/* 위협 탐지 제목 */}
+                  <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 0.3 }}>
+                    위협 탐지
+                  </Typography>
 
-                {/* 경로 */}
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                  {sourceAssetName || getAssetName(sourceIp)} ({sourceIp}) → {targetAssetName || getAssetName(destIp)} ({destIp})
-                </Typography>
+                  {/* 경로 */}
+                  <Typography variant="body2" color="text.secondary">
+                    {sourceAssetName || getAssetName(sourceIp)} ({sourceIp}) → {targetAssetName || getAssetName(destIp)} ({destIp})
+                  </Typography>
+                </Box>
 
-                {/* 레벨, 탐지엔진, 상태, 버튼 */}
-                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+                {/* 오른쪽: 레벨, 탐지엔진, 상태, 버튼 */}
+                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexShrink: 0 }}>
                   {/* 위험도 레벨 칩 */}
                   <Chip
                     label={levelStyle.text}
@@ -171,8 +170,9 @@ export default function Alerts({ onAlertConfirm }) {
                       color: 'white',
                       fontWeight: 'bold',
                       fontSize: '0.75rem',
-                      height: '24px',
-                      borderRadius: '12px'
+                      height: '28px',
+                      borderRadius: '14px',
+                      px: 1
                     }}
                   />
 
@@ -184,13 +184,14 @@ export default function Alerts({ onAlertConfirm }) {
                       backgroundColor: '#e0e0e0',
                       color: '#666',
                       fontSize: '0.75rem',
-                      height: '24px',
-                      borderRadius: '12px'
+                      height: '28px',
+                      borderRadius: '14px',
+                      px: 1
                     }}
                   />
 
                   {/* 상태 */}
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" color="text.secondary" sx={{ minWidth: '50px', textAlign: 'center' }}>
                     {statusKorean}
                   </Typography>
 
@@ -200,16 +201,18 @@ export default function Alerts({ onAlertConfirm }) {
                       variant="contained"
                       size="small"
                       sx={{
-                        ml: 'auto',
-                        backgroundColor: threat.hasXaiAnalysis ? '#1976d2' : '#9e9e9e',
-                        color: 'white',
+                        backgroundColor: threat.hasXaiAnalysis ? '#1976d2' : '#e0e0e0',
+                        color: threat.hasXaiAnalysis ? 'white' : '#999',
                         fontSize: '0.75rem',
                         textTransform: 'none',
-                        borderRadius: '16px',
-                        minWidth: '70px',
-                        height: '28px',
+                        borderRadius: '20px',
+                        minWidth: '90px',
+                        height: '36px',
+                        px: 2,
+                        boxShadow: 'none',
                         '&:hover': {
-                          backgroundColor: threat.hasXaiAnalysis ? '#1565c0' : '#757575'
+                          backgroundColor: threat.hasXaiAnalysis ? '#1565c0' : '#d0d0d0',
+                          boxShadow: 'none'
                         }
                       }}
                     >
