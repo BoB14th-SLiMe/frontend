@@ -27,6 +27,19 @@ const getColorByStatus = (status) => {
   }
 };
 
+// PPS 값을 읽기 쉽게 포맷팅
+const formatPPS = (pps) => {
+  if (!pps || pps === 0) return '0 pps';
+
+  if (pps >= 1000000) {
+    return `${(pps / 1000000).toFixed(2)}M pps`;
+  } else if (pps >= 1000) {
+    return `${(pps / 1000).toFixed(2)}K pps`;
+  } else {
+    return `${pps.toFixed(2)} pps`;
+  }
+};
+
 export const NetworkDeviceConfigProvider = ({ children }) => {
   const [hmiDevices, setHmiDevices] = useState([]);
   const [plcDevices, setPlcDevices] = useState([]);
@@ -112,7 +125,7 @@ export const NetworkDeviceConfigProvider = ({ children }) => {
   // 스위치 정보 (SCADA 서버 정보)
   const switchInfo = {
     name: 'SWITCH',
-    traffic: `${networkStats.pps.toFixed(2)} pps`,
+    traffic: formatPPS(networkStats.pps),
     connections: networkStats.connections,
     icon: 'CompareArrowsIcon',
     color: '#42a5f5'

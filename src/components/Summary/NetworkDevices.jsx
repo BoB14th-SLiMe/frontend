@@ -94,7 +94,7 @@ const LayerSection = ({ label, children, showDivider = true, alignItems = "flex-
 
 // ===== 메인 컴포넌트 =====
 export default function NetworkDevices() {
-    const { hmiDevices, plcDevices, networkStats, loading } = useNetworkDeviceConfig();
+    const { hmiDevices, plcDevices, switchInfo, loading } = useNetworkDeviceConfig();
 
     // 4개씩 끊어서 표시
     const chunkedPLCs = [];
@@ -184,8 +184,8 @@ export default function NetworkDevices() {
                             </Typography>
                         </Box>
                         <SwitchInfoCard
-                            traffic={networkStats.pps}
-                            connections={networkStats.connections}
+                            traffic={switchInfo.traffic}
+                            connections={switchInfo.connections}
                         />
                     </Box>
                 </LayerSection>
