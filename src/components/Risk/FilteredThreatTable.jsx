@@ -130,43 +130,61 @@ export default function FilteredThreatTable({ onEventSelect }) {
 
   // 매핑 함수들
   const mapSeverity = (level) => {
+    if (!level) return '정보';
+    const lowerLevel = level.toLowerCase();
     const map = {
+      'warning': '긴급',
+      'attention': '경고',
       'critical': '긴급',
       'high': '경고',
       'medium': '보통',
       'low': '낮음'
     };
-    return map[level] || level;
+    return map[lowerLevel] || level;
   };
 
   const mapSeverityLevel = (level) => {
+    if (!level) return 0;
+    const lowerLevel = level.toLowerCase();
     const map = {
+      'warning': 3,
+      'attention': 2,
       'critical': 3,
       'high': 2,
       'medium': 1,
       'low': 0
     };
-    return map[level] || 0;
+    return map[lowerLevel] || 0;
   };
 
   const mapSeverityColor = (level) => {
+    if (!level) return 'default';
+    const lowerLevel = level.toLowerCase();
     const map = {
+      'warning': 'error',      // 빨간색
+      'attention': 'warning',  // 주황색
       'critical': 'error',
       'high': 'warning',
       'medium': 'info',
       'low': 'success'
     };
-    return map[level] || 'default';
+    return map[lowerLevel] || 'default';
   };
 
   const mapStatus = (status) => {
+    if (!status) return '신규';
+    const lowerStatus = status.toLowerCase();
     const map = {
+      'new': '신규',
       'detected': '신규',
+      'analyzing': '분석중',
       'investigating': '확인중',
+      'confirmed': '확인',
       'resolved': '조치완료',
+      'completed': '조치완료',
       'false_positive': '오탐'
     };
-    return map[status] || status;
+    return map[lowerStatus] || status;
   };
 
   return (

@@ -311,9 +311,9 @@ export default function StatBoxes() {
   const allItems = getEnabledItems();
   const [blinking, setBlinking] = useState(false);
 
-  // 긴급 위협이 있는지 확인
+  // 긴급 위협이 있는지 확인 (위협 점수 >= 50)
   const hasCriticalThreat = allItems.some(item => {
-    if (item.type === 'gauge' && item.config.score > 80) return true;
+    if (item.type === 'gauge' && item.config.score >= 50) return true;
     if (item.type === 'stat' && item.config.title === '긴급 알람' && item.config.number > 0) return true;
     return false;
   });
