@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import DashboardBlock from '../DashboardBlock';
-import { Box, Typography, Chip, CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
+import { Box, Typography, Chip, CircularProgress, Button } from '@mui/material';
 import { threatApi } from '../../service/apiService';
 
 // 위협 수준에 따른 색상 및 텍스트 반환
@@ -87,94 +87,123 @@ export default function Alerts({ onAlertConfirm }) {
 
   return (
     <DashboardBlock title="이상 탐지 및 알람" sx={{ height: '100%', flex: 5 }}>
-      <TableContainer sx={{ maxHeight: 400 }}>
-        <Table stickyHeader size="small">
-          <TableHead>
-            <TableRow>
-              <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f5f5f5', width: '12%' }}>시간</TableCell>
-              <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f5f5f5', width: '12%' }}>분류</TableCell>
-              <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f5f5f5', width: '30%' }}>경로</TableCell>
-              <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f5f5f5', width: '10%' }}>수준</TableCell>
-              <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f5f5f5', width: '10%' }}>타입</TableCell>
-              <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f5f5f5', width: '8%' }}>심각도</TableCell>
-              <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f5f5f5', width: '10%' }}>상태</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {threats.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} align="center" sx={{ py: 4, color: 'text.secondary' }}>
-                  현재 알림이 없습니다.
-                </TableCell>
-              </TableRow>
-            ) : (
-              threats.map((threat) => {
-                // API 응답 필드명 매핑
-                const threatLevel = threat.threat_level || threat.threatLevel;
-                const sourceIp = threat.src_ip || threat.sourceIp;
-                const destIp = threat.dst_ip || threat.destinationIp || threat.destIp;
-                const threatType = threat.threat_type || threat.threatType || threat.detection_engine || 'DL';
-                const timestamp = new Date(threat['@timestamp'] || threat.timestamp || threat.eventTimestamp);
-                const status = threat.status;
-                const threatId = threat.threat_id || threat.id;
-                const sourceAssetName = threat.source_asset_name || threat.sourceAssetName;
-                const targetAssetName = threat.target_asset_name || threat.targetAssetName;
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+        {threats.length === 0 ? (
+          <Box sx={{ p: 4, textAlign: 'center', color: 'text.secondary' }}>
+            <Typography>현재 알림이 없습니다.</Typography>
+          </Box>
+        ) : (
+          threats.map((threat, index) => {
+            // API 응답 필드명 매핑
+            const threatLevel = threat.threat_level || threat.threatLevel;
+            const sourceIp = threat.src_ip || threat.sourceIp;
+            const destIp = threat.dst_ip || threat.destinationIp || threat.destIp;
+            const detectionEngine = threat.detection_engine || threat.detectionEngine || 'DL';
+            const timestamp = new Date(threat['@timestamp'] || threat.timestamp || threat.eventTimestamp);
+            const status = threat.status;
+            const threatId = threat.threat_id || threat.id;
+            const sourceAssetName = threat.source_asset_name || threat.sourceAssetName;
+            const targetAssetName = threat.target_asset_name || threat.targetAssetName;
 
-                const levelStyle = getThreatLevelStyle(threatLevel);
-                const timeStr = timestamp.toLocaleString('ko-KR', {
-                  month: '2-digit',
-                  day: '2-digit',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  second: '2-digit',
-                  hour12: false
-                }).replace(/\. /g, '.').replace(/\./g, '/').replace('/', '.').substring(0, 17);
+            const levelStyle = getThreatLevelStyle(threatLevel);
+            const timeStr = timestamp.toLocaleString('ko-KR', {
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: false
+            }).replace(/\. /g, '.').replace(/\./g, ' ').replace(/\//g, '.');
 
-                // 상태 한글 변환
-                const statusKorean = status === 'new' ? '신규' :
-                                    status === 'analyzing' ? '분석중' :
-                                    status === 'confirmed' ? '확인' :
-                                    status === 'resolved' ? '조치완료' : status;
+            // 상태 한글 변환
+            const statusKorean = status === 'new' ? '신규' :
+                                status === 'analyzing' ? '분석중' :
+                                status === 'confirmed' ? '확인' :
+                                status === 'resolved' ? '조치완료' : status;
 
-                return (
-                  <TableRow key={threatId} hover>
-                    <TableCell sx={{ fontSize: '0.875rem' }}>{timeStr}</TableCell>
-                    <TableCell sx={{ fontSize: '0.875rem' }}>위협탐지</TableCell>
-                    <TableCell sx={{ fontSize: '0.875rem' }}>
-                      {sourceAssetName || getAssetName(sourceIp)} ({sourceIp}) → {targetAssetName || getAssetName(destIp)}
-                    </TableCell>
-                    <TableCell>
-                      <Typography
-                        sx={{
-                          fontSize: '0.875rem',
-                          fontWeight: 'bold',
-                          color: levelStyle.color
-                        }}
-                      >
-                        {levelStyle.text}
-                      </Typography>
-                    </TableCell>
-                    <TableCell sx={{ fontSize: '0.875rem' }}>{threatType}</TableCell>
-                    <TableCell>
-                      <Chip
-                        label={statusKorean}
-                        size="small"
-                        sx={{
-                          fontSize: '0.75rem',
-                          height: '22px',
-                          backgroundColor: status === 'new' ? '#e3f2fd' : '#fff3e0',
-                          color: status === 'new' ? '#1976d2' : '#f57c00'
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell sx={{ fontSize: '0.875rem' }}>{statusKorean}</TableCell>
-                  </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+            return (
+              <Box
+                key={threatId}
+                sx={{
+                  p: 2,
+                  borderBottom: index < threats.length - 1 ? '1px solid #eee' : 'none',
+                  '&:hover': { backgroundColor: '#f9f9f9' }
+                }}
+              >
+                {/* 시간 */}
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                  {timeStr}
+                </Typography>
+
+                {/* 위협 탐지 제목 */}
+                <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 0.5 }}>
+                  위협 탐지
+                </Typography>
+
+                {/* 경로 */}
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  {sourceAssetName || getAssetName(sourceIp)} ({sourceIp}) → {targetAssetName || getAssetName(destIp)}
+                </Typography>
+
+                {/* 레벨, 탐지엔진, 상태, 버튼 */}
+                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+                  {/* 위험도 레벨 칩 */}
+                  <Chip
+                    label={levelStyle.text}
+                    size="small"
+                    sx={{
+                      backgroundColor: levelStyle.color,
+                      color: 'white',
+                      fontWeight: 'bold',
+                      fontSize: '0.75rem',
+                      height: '24px',
+                      borderRadius: '12px'
+                    }}
+                  />
+
+                  {/* 탐지엔진 칩 */}
+                  <Chip
+                    label={detectionEngine}
+                    size="small"
+                    sx={{
+                      backgroundColor: '#e0e0e0',
+                      color: '#666',
+                      fontSize: '0.75rem',
+                      height: '24px',
+                      borderRadius: '12px'
+                    }}
+                  />
+
+                  {/* 상태 */}
+                  <Typography variant="body2" color="text.secondary">
+                    {statusKorean}
+                  </Typography>
+
+                  {/* 분석중 버튼 (상태가 신규 또는 분석중일 때만) */}
+                  {(status === 'new' || status === 'analyzing') && (
+                    <Button
+                      variant="contained"
+                      size="small"
+                      sx={{
+                        ml: 'auto',
+                        backgroundColor: '#1976d2',
+                        color: 'white',
+                        fontSize: '0.75rem',
+                        textTransform: 'none',
+                        borderRadius: '16px',
+                        minWidth: '70px',
+                        height: '28px',
+                        '&:hover': { backgroundColor: '#1565c0' }
+                      }}
+                    >
+                      분석하기
+                    </Button>
+                  )}
+                </Box>
+              </Box>
+            );
+          })
+        )}
+      </Box>
     </DashboardBlock>
   );
 }
