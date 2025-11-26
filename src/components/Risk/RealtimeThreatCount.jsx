@@ -33,13 +33,14 @@ const RealtimeThreatChart = () => {
             } finally {
                 setLoading(false);
             }
-        };
 
         fetchData();
 
         // 1분마다 데이터 업데이트
         const interval = setInterval(fetchData, 60000);
 
+        // Refresh every 60 seconds
+        const interval = setInterval(fetchData, 60000);
         return () => clearInterval(interval);
     }, [timeRange]);
 

@@ -159,6 +159,7 @@ export default function WeeklyProtocol() {
                 style={{ height: '100%', width: '100%' }}
                 notMerge={true}
                 lazyUpdate={true}
+                showLoading={loading}
             />
         </DashboardBlock>
     );

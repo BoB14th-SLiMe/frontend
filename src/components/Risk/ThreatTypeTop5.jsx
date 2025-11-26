@@ -55,7 +55,7 @@ export default function ThreatTypeTop5({ showLoading = false }) {
         animation: false,
         tooltip: {
             trigger: 'item',
-            formatter: '{b} : {c}건 ({d}%)' // 호버 시 툴팁 포맷
+            formatter: '{b} : {c}건 ({d}%)'
         },
         // 범례(Legend) 설정
         legend: {
@@ -83,7 +83,6 @@ export default function ThreatTypeTop5({ showLoading = false }) {
                 // [가로, 세로] - 세로를 '25%'로 하여 하단 범례 공간 확보
                 center: ['50%', '25%'],
                 avoidLabelOverlap: false,
-                // 차트 조각 위에 표시되는 기본 라벨 숨기기
                 label: {
                     show: false,
                 },

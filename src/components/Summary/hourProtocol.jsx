@@ -129,6 +129,7 @@ export default function ProtocolDistribution() {
                 style={{ height: '100%', width: '100%' }}
                 notMerge={true}
                 lazyUpdate={true}
+                showLoading={loading}
             />
         </DashboardBlock>
     );

@@ -111,26 +111,27 @@ export default function ThreatGradeIncidence() {
     };
 
     return (
-        <DashboardBlock 
-            title="위협 등급별 사건 수 (7일)" 
-            sx={{ height: '100%', flex: 1, minWidth: 0 }} 
+        <DashboardBlock
+            title="위협 등급별 사건 수 (7일)"
+            sx={{ height: '100%', flex: 1, minWidth: 0 }}
         >
-            <Box sx={{ 
-                display: 'flex', 
-                flexDirection: 'column', 
+            <Box sx={{
+                display: 'flex',
+                flexDirection: 'column',
                 height: '100%'
             }}>
                 {/* 막대 그래프 */}
                 <Box sx={{ height: 80 }}>
-                    <ReactECharts 
+                    <ReactECharts
                         option={option}
                         style={{ height: '100%', width: '100%' }}
+                        showLoading={loading}
                     />
                 </Box>
-                
+
                 {/* 공격 목적지 자산 테이블 */}
                 <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid #e0e0e0' }}>
-                    <Typography sx={{ 
+                    <Typography sx={{
                         fontSize: '0.9rem',
                         fontWeight: 600,
                         color: '#333',
@@ -138,9 +139,9 @@ export default function ThreatGradeIncidence() {
                     }}>
                         목적지 자산
                     </Typography>
-                    
+
                     <Box sx={{ display: 'flex', mb: 1.5, pb: 0.1, borderBottom: '1px solid #f0f0f0' }}>
-                        <Typography sx={{ 
+                        <Typography sx={{
                             flex: 1,
                             fontSize: '0.8rem',
                             color: '#999',
@@ -148,7 +149,7 @@ export default function ThreatGradeIncidence() {
                         }}>
                             목적지
                         </Typography>
-                        <Typography sx={{ 
+                        <Typography sx={{
                             width: 80,
                             fontSize: '0.8rem',
                             color: '#999',
@@ -158,21 +159,21 @@ export default function ThreatGradeIncidence() {
                             공격 횟수
                         </Typography>
                     </Box>
-                    
+
                     {tableData.map((row, idx) => (
-                        <Box key={idx} sx={{ 
+                        <Box key={idx} sx={{
                             display: 'flex',
                             py: 0.8,
                             borderBottom: idx < tableData.length - 1 ? '1px solid #f5f5f5' : 'none'
                         }}>
-                            <Typography sx={{ 
+                            <Typography sx={{
                                 flex: 1,
                                 fontSize: '0.85rem',
                                 color: '#333'
                             }}>
                                 {row.ip}
                             </Typography>
-                            <Typography sx={{ 
+                            <Typography sx={{
                                 width: 80,
                                 fontSize: '0.85rem',
                                 color: '#333',
