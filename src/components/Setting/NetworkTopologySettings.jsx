@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { 
+import React, { useState, useEffect } from 'react';
+import {
   Paper, Typography, Box, Stack, Divider, Button,
   TextField, Dialog, DialogTitle, DialogContent, DialogActions,
-  List, ListItem, ListItemText, ListItemSecondaryAction, IconButton
+  List, ListItem, ListItemText, ListItemSecondaryAction, IconButton, CircularProgress
 } from '@mui/material';
 import ComputerIcon from '@mui/icons-material/Computer';
 import DataObjectIcon from '@mui/icons-material/DataObject';
@@ -11,8 +11,9 @@ import SpeedIcon from '@mui/icons-material/Speed';
 import LinkIcon from '@mui/icons-material/Link';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
-import DragHandleIcon from '@mui/icons-material/DragHandle'; // Import drag handle
+import DragHandleIcon from '@mui/icons-material/DragHandle';
 import { useNetworkDeviceConfig } from "../../hooks/NetworkDeviceConfigContext";
+import { assetApi } from '../../service/apiService';
 import {
   DndContext,
   closestCenter,
@@ -32,21 +33,21 @@ import { CSS } from '@dnd-kit/utilities';
 
 // 장치 카드 (프리뷰용)
 const DeviceCard = ({ name, ip, icon, color }) => {
-  const IconComponent = icon === 'ComputerIcon' ? ComputerIcon : 
+  const IconComponent = icon === 'ComputerIcon' ? ComputerIcon :
                        icon === 'CompareArrowsIcon' ? CompareArrowsIcon : DataObjectIcon;
-  
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 100 }}>
-      <Box sx={{ 
-        backgroundColor: color, 
-        borderRadius: 2, 
-        p: 1.5, 
-        mb: 1, 
-        width: 56, 
-        height: 56, 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center' 
+      <Box sx={{
+        backgroundColor: color,
+        borderRadius: 2,
+        p: 1.5,
+        mb: 1,
+        width: 56,
+        height: 56,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
       }}>
         <IconComponent sx={{ color: 'white', fontSize: 32 }} />
       </Box>
@@ -61,8 +62,8 @@ const DeviceCard = ({ name, ip, icon, color }) => {
 // 스위치 정보
 const InfoItem = ({ icon: Icon, label, value, color }) => (
   <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-    <Box sx={{ display: 'flex', alignItems: 'center', color, mb: 0.5 }}> 
-      <Icon sx={{ fontSize: 18, mr: 0.5 }} /> 
+    <Box sx={{ display: 'flex', alignItems: 'center', color, mb: 0.5 }}>
+      <Icon sx={{ fontSize: 18, mr: 0.5 }} />
       <Typography variant="caption" color="text.secondary">{label}</Typography>
     </Box>
     <Typography variant="body1" fontWeight="bold" color={color}>
@@ -72,14 +73,14 @@ const InfoItem = ({ icon: Icon, label, value, color }) => (
 );
 
 const SwitchInfoCard = ({ traffic, connections }) => (
-  <Box sx={{ 
-    p: 2, 
-    border: '1px solid #e0e0e0', 
-    borderRadius: 3, 
-    minWidth: 200, 
-    display: 'flex', 
-    gap: 1, 
-    backgroundColor: '#ffffff' 
+  <Box sx={{
+    p: 2,
+    border: '1px solid #e0e0e0',
+    borderRadius: 3,
+    minWidth: 200,
+    display: 'flex',
+    gap: 1,
+    backgroundColor: '#ffffff'
   }}>
     <InfoItem icon={SpeedIcon} label="트래픽" value={traffic} color="#42a5f5" />
     <InfoItem icon={LinkIcon} label="연결" value={connections} color="#ff9800" />
@@ -131,8 +132,8 @@ const AddDeviceDialog = ({ open, onClose, onAdd }) => {
   );
 };
 
-// New SortableListItem for Active Devices
-function SortableListItem({ device, isEditMode, onDelete }) {
+// SortableListItem for Active Devices
+function SortableListItem({ device, isEditMode, onDelete, onToggleVisibility }) {
   const {
     attributes,
     listeners,
@@ -156,7 +157,7 @@ function SortableListItem({ device, isEditMode, onDelete }) {
         borderRadius: 1,
         border: '1px solid #e0e0e0',
         p: 1,
-        pr: isEditMode ? 12 : 1, // Make space for delete button
+        pr: isEditMode ? 12 : 1,
       }}
     >
       {isEditMode && (
@@ -183,10 +184,10 @@ function SortableListItem({ device, isEditMode, onDelete }) {
             size="small"
             variant="outlined"
             color="error"
-            onClick={() => onDelete(device.id)}
+            onClick={() => onToggleVisibility(device.id)}
             sx={{ minWidth: '60px' }}
           >
-            삭제
+            숨기기
           </Button>
         </ListItemSecondaryAction>
       )}
@@ -194,17 +195,19 @@ function SortableListItem({ device, isEditMode, onDelete }) {
   );
 }
 
-
 export default function NetworkTopologySettings() {
-  const { 
-    deviceConfig, 
-    deleteDevice, 
-    addFromDiscovered: addFromDiscoveredContext,
-    addDevice,
-    reorderDevices
-  } = useNetworkDeviceConfig();
+  const { hmiDevices, plcDevices, control, switchInfo, loading } = useNetworkDeviceConfig();
   const [isEditMode, setIsEditMode] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [localDevices, setLocalDevices] = useState([]);
+  const [hiddenDevices, setHiddenDevices] = useState([]);
+
+  // plcDevices가 변경되면 localDevices 업데이트
+  useEffect(() => {
+    if (plcDevices.length > 0) {
+      setLocalDevices(plcDevices);
+    }
+  }, [plcDevices]);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -216,43 +219,85 @@ export default function NetworkTopologySettings() {
   const handleDragEnd = (event) => {
     const { active, over } = event;
     if (active.id !== over.id) {
-      const oldIndex = deviceConfig.devices.findIndex((d) => d.id === active.id);
-      const newIndex = deviceConfig.devices.findIndex((d) => d.id === over.id);
-      const newDevicesOrder = arrayMove(deviceConfig.devices, oldIndex, newIndex);
-      reorderDevices(newDevicesOrder);
+      const oldIndex = localDevices.findIndex((d) => d.id === active.id);
+      const newIndex = localDevices.findIndex((d) => d.id === over.id);
+      const newDevicesOrder = arrayMove(localDevices, oldIndex, newIndex);
+      setLocalDevices(newDevicesOrder);
     }
   };
 
-  const handleSave = () => {
-    setIsEditMode(false);
+  const handleSave = async () => {
+    try {
+      // 숨겨진 장치들을 isVisible=false로 업데이트
+      for (const device of hiddenDevices) {
+        await assetApi.updateAsset(device.id, { isVisible: false });
+      }
+      console.log('✅ 설정이 저장되었습니다');
+      setIsEditMode(false);
+      setHiddenDevices([]);
+    } catch (error) {
+      console.error('❌ 설정 저장 실패:', error);
+    }
   };
 
-  const handleDeleteDevice = (id) => {
-    deleteDevice(id);
+  const handleToggleVisibility = (id) => {
+    const device = localDevices.find(d => d.id === id);
+    if (device) {
+      setLocalDevices(prev => prev.filter(d => d.id !== id));
+      setHiddenDevices(prev => [...prev, device]);
+    }
   };
 
-  const handleAddFromDiscovered = (device) => {
-    addFromDiscoveredContext(device);
+  const handleRestoreDevice = (id) => {
+    const device = hiddenDevices.find(d => d.id === id);
+    if (device) {
+      setHiddenDevices(prev => prev.filter(d => d.id !== id));
+      setLocalDevices(prev => [...prev, device]);
+    }
   };
 
-  const handleAddDevice = (deviceData) => {
-    const newDevice = {
-      id: `plc${Date.now()}`,
-      name: deviceData.name,
-      ip: deviceData.ip,
-      color: '#42a5f5'
-    };
-    addDevice(newDevice);
+  const handleAddDevice = async (deviceData) => {
+    try {
+      // PLC 타입으로 새 자산 추가
+      const response = await assetApi.createAsset({
+        name: deviceData.name,
+        ipAddress: deviceData.ip,
+        assetType: 'plc',
+        isVisible: true,
+        status: 'active'
+      });
+
+      const newDevice = {
+        id: response.data.assetId,
+        name: response.data.name,
+        ip: response.data.ipAddress,
+        color: '#42a5f5',
+        icon: 'DataObjectIcon'
+      };
+
+      setLocalDevices(prev => [...prev, newDevice]);
+      console.log('✅ 장비가 추가되었습니다:', newDevice);
+    } catch (error) {
+      console.error('❌ 장비 추가 실패:', error);
+    }
   };
+
+  if (loading) {
+    return (
+      <Paper sx={{ p: 3, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <CircularProgress />
+      </Paper>
+    );
+  }
 
   const chunkedDevices = [];
-  for (let i = 0; i < deviceConfig.devices.length; i += 3) {
-      chunkedDevices.push(deviceConfig.devices.slice(i, i + 3));
+  for (let i = 0; i < localDevices.length; i += 3) {
+    chunkedDevices.push(localDevices.slice(i, i + 3));
   }
 
   return (
     <Paper sx={{ width: '100%', height: '100%', padding: 2.5, boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0}}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0 }}>
         <Typography variant="h6">네트워크 토폴로지 설정</Typography>
         {!isEditMode ? (
           <Button variant="contained" startIcon={<EditIcon />} onClick={() => setIsEditMode(true)}>
@@ -274,31 +319,39 @@ export default function NetworkTopologySettings() {
               <Typography variant="caption" color="text.secondary" sx={{ display: 'block', position: 'relative', top: 50, left: 10 }}>
                 제어 계층
               </Typography>
-              <Box display="flex" justifyContent="center">
-                <Box sx={{ transform: 'scale(0.85)' }}>
-                  <DeviceCard {...deviceConfig.control} />
-                </Box>
+              <Box display="flex" justifyContent="center" gap={2} flexWrap="wrap">
+                {hmiDevices.length > 0 ? (
+                  hmiDevices.map((device) => (
+                    <Box key={device.id} sx={{ transform: 'scale(0.85)' }}>
+                      <DeviceCard {...device} />
+                    </Box>
+                  ))
+                ) : (
+                  <Box sx={{ transform: 'scale(0.85)' }}>
+                    <DeviceCard {...control} />
+                  </Box>
+                )}
               </Box>
               <Divider sx={{ mt: 0.5 }} />
             </Box>
 
             {/* 스위치 */}
             <Box>
-              <Typography variant="caption" color="text.secondary" sx={{display: 'block', position: 'relative', top: 40, left: 10 }}>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', position: 'relative', top: 40, left: 10 }}>
                 스위치
               </Typography>
               <Box display="flex" justifyContent="center" alignItems="center" gap={2}>
                 <Box sx={{ transform: 'scale(0.85)' }}>
-                  <DeviceCard 
-                    name={deviceConfig.switch.name}
-                    icon={deviceConfig.switch.icon}
-                    color={deviceConfig.switch.color}
+                  <DeviceCard
+                    name={switchInfo.name}
+                    icon={switchInfo.icon}
+                    color={switchInfo.color}
                   />
                 </Box>
                 <Box sx={{ transform: 'scale(0.85)' }}>
                   <SwitchInfoCard
-                    traffic={deviceConfig.switch.traffic}
-                    connections={deviceConfig.switch.connections}
+                    traffic={switchInfo.traffic}
+                    connections={switchInfo.connections}
                   />
                 </Box>
               </Box>
@@ -307,15 +360,15 @@ export default function NetworkTopologySettings() {
 
             {/* 장치 */}
             <Box>
-              <Typography variant="caption" color="text.secondary" sx={{  display: 'block', position: 'relative', top: 90, left: 10 }}>
-                장치 ({deviceConfig.devices.length})
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', position: 'relative', top: 90, left: 10 }}>
+                장치 ({localDevices.length})
               </Typography>
               <Stack spacing={1}>
                 {chunkedDevices.map((row, idx) => (
                   <Box key={idx} display="flex" justifyContent="center" gap={1.5}>
                     {row.map(device => (
                       <Box key={device.id} sx={{ transform: 'scale(0.85)' }}>
-                        <DeviceCard 
+                        <DeviceCard
                           {...device}
                           icon="DataObjectIcon"
                         />
@@ -347,7 +400,7 @@ export default function NetworkTopologySettings() {
             {/* 활성 장치 */}
             <Box>
               <Typography variant="caption" color="primary" fontWeight="bold" sx={{ mb: 1, display: 'block' }}>
-                활성 장치 ({deviceConfig.devices.length})
+                활성 장치 ({localDevices.length})
               </Typography>
               <DndContext
                 sensors={sensors}
@@ -355,16 +408,16 @@ export default function NetworkTopologySettings() {
                 onDragEnd={handleDragEnd}
               >
                 <SortableContext
-                  items={deviceConfig.devices.map(d => d.id)}
+                  items={localDevices.map(d => d.id)}
                   strategy={verticalListSortingStrategy}
                 >
                   <List sx={{ p: 0 }}>
-                    {deviceConfig.devices.map((device) => (
+                    {localDevices.map((device) => (
                       <SortableListItem
                         key={device.id}
                         device={device}
                         isEditMode={isEditMode}
-                        onDelete={handleDeleteDevice}
+                        onToggleVisibility={handleToggleVisibility}
                       />
                     ))}
                   </List>
@@ -372,22 +425,22 @@ export default function NetworkTopologySettings() {
               </DndContext>
             </Box>
 
-            {/* 발견된 장치 */}
-            {deviceConfig.discoveredDevices && deviceConfig.discoveredDevices.length > 0 && (
+            {/* 숨겨진 장치 */}
+            {isEditMode && hiddenDevices.length > 0 && (
               <Box>
                 <Divider sx={{ my: 1 }} />
                 <Typography variant="caption" color="text.secondary" fontWeight="bold" sx={{ mb: 0.5, display: 'block' }}>
-                  발견된 장치 ({deviceConfig.discoveredDevices.length})
+                  숨겨진 장치 ({hiddenDevices.length})
                 </Typography>
                 <List sx={{ p: 0 }}>
-                  {deviceConfig.discoveredDevices.map((device) => (
+                  {hiddenDevices.map((device) => (
                     <ListItem
                       key={device.id}
                       sx={{
-                        backgroundColor: '#fff9e6',
+                        backgroundColor: '#f5f5f5',
                         mb: 0.5,
                         borderRadius: 1,
-                        border: '1px solid #ffe082',
+                        border: '1px solid #e0e0e0',
                         p: 1,
                         pr: 10,
                       }}
@@ -398,26 +451,25 @@ export default function NetworkTopologySettings() {
                           height: 20,
                           backgroundColor: device.color,
                           borderRadius: 1,
-                          mr: 1.5
+                          mr: 1.5,
+                          opacity: 0.5
                         }}
                       />
                       <ListItemText
-                        primary={<Typography variant="body2">{device.name}</Typography>}
-                        secondary={<Typography variant="caption">{device.ip}</Typography>}
+                        primary={<Typography variant="body2" color="text.secondary">{device.name}</Typography>}
+                        secondary={<Typography variant="caption" color="text.secondary">{device.ip}</Typography>}
                       />
-                      {isEditMode && (
-                        <ListItemSecondaryAction>
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            color="primary"
-                            onClick={() => handleAddFromDiscovered(device)}
-                            sx={{ minWidth: '60px' }}
-                          >
-                            추가
-                          </Button>
-                        </ListItemSecondaryAction>
-                      )}
+                      <ListItemSecondaryAction>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          color="primary"
+                          onClick={() => handleRestoreDevice(device.id)}
+                          sx={{ minWidth: '60px' }}
+                        >
+                          복원
+                        </Button>
+                      </ListItemSecondaryAction>
                     </ListItem>
                   ))}
                 </List>

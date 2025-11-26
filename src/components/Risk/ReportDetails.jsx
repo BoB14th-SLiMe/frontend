@@ -1,7 +1,6 @@
 import React from 'react';
-import { Box, Typography, Grid, Stack, Chip } from '@mui/material';
+import { Box, Typography, Grid, Stack, CircularProgress } from '@mui/material';
 
-// ⭐️ MOCK 데이터 (부모로부터 event prop이 null일 경우 대비)
 const defaultEvent = {
   id: 0,
   timestamp: 'N/A',
@@ -12,7 +11,6 @@ const defaultEvent = {
   status: 'N/A',
 };
 
-// 키-값 표시용 컴포넌트
 const InfoItem = ({ label, value }) => (
   <Stack direction="row" spacing={1} alignItems="center">
     <Typography
@@ -26,51 +24,62 @@ const InfoItem = ({ label, value }) => (
     >
       {label} :
     </Typography>
-    <Typography
-      variant="body2"
-      color="text.secondary"
-    >
+    <Typography variant="body2" color="text.secondary">
       {value}
     </Typography>
   </Stack>
 );
 
+export default function ReportDetails({ event, detailData, loading }) {
+  // 로딩 중
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          backgroundColor: '#F1F1F3',
+          p: 2,
+          borderRadius: 2,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: 150,
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
 
-export default function ReportDetails({ event }) {
+  // 백엔드 데이터 우선, 없으면 event prop 사용
+  const displayData = detailData || event || defaultEvent;
   
-  // ⭐️ [오류 수정]
-  // event가 null일 때 defaultEvent를 사용하도록 || 연산자 추가
-  const { 
-    id, 
-    timestamp, 
-    threatType, 
-    sourceIp, 
-    targetDevice, 
-    detectionMethod, 
-    status 
-  } = event || defaultEvent; 
+  const {
+    id,
+    timestamp,
+    threatType,
+    sourceIp,
+    targetDevice,
+    detectionMethod,
+    status,
+  } = displayData;
 
   return (
-    // ⭐️ [수정]
-    // 이 컴포넌트는 DetailReport의 자식으로 들어가므로
-    // 래퍼 Box는 제거하고 상세 내용 Box만 반환합니다.
     <Box
       sx={{
         backgroundColor: '#F1F1F3',
         p: 1,
         borderRadius: 2,
-        boxSizing: 'border-box', // 패딩이 크기에 포함되도록
+        boxSizing: 'border-box',
       }}
     >
-      
       <Grid
         container
         columnSpacing={4}
         rowSpacing={0.5}
         sx={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(2, 1fr)', 
-          gridTemplateRows: 'repeat(3, auto)', 
+          gridTemplateColumns: 'repeat(2, 1fr)',
+          gridTemplateRows: 'repeat(3, auto)',
         }}
       >
         <Grid item>
@@ -97,4 +106,3 @@ export default function ReportDetails({ event }) {
     </Box>
   );
 }
-

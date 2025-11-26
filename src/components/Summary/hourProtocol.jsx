@@ -1,56 +1,67 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import DashboardBlock from '../DashboardBlock';
 import ReactECharts from 'echarts-for-react';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+import { CircularProgress, Box, Typography } from '@mui/material';
+import { protocolApi } from '../../service/apiService';
 
 const PROTOCOL_COLORS = {
-    Modbus: '#A0E7E5',
-    TCP: '#F08080',
-    UDP: '#F7DC6F',
-    LLDP: '#F5CBA7',
+    // 실제 프로토콜 이름 (소문자) - 파랑/초록 계열
+    'modbus': '#4FC3F7',      // 밝은 하늘색
+    'tcp_session': '#66BB6A',  // 초록
+    'udp': '#26C6DA',         // 청록색
+    'http': '#42A5F5',        // 파랑
+    'icmp': '#5C6BC0',        // 남색
+    'arp': '#29B6F6',         // 밝은 파랑
+    'lldp': '#26A69A',        // 청록
+    'dhcp': '#66BB6A',        // 초록
+    's7comm': '#80CBC4',      // 민트
+    'mms': '#81C784',         // 연두
+    'xgt_fen': '#4DD0E1',     // 하늘색
+    'unknown': '#B0BEC5',     // 회색
+    // 대문자 버전도 지원
+    'Modbus': '#4FC3F7',
+    'TCP': '#66BB6A',
+    'UDP': '#26C6DA',
+    'HTTP': '#42A5F5',
+    'ICMP': '#5C6BC0',
+    'ARP': '#29B6F6',
+    'LLDP': '#26A69A',
+    'Other': '#B0BEC5'
 };
 
 export default function ProtocolDistribution() {
-    const [protocolData, setProtocolData] = useState([]);
+    const [chartData, setChartData] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchProtocolData = async () => {
             try {
-                const response = await fetch(`${API_BASE_URL}/protocols/hourly`);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const data = await response.json();
+                setLoading(true);
+                const response = await protocolApi.getHourlyProtocol();
+                const protocols = response.data.protocols || {};
 
-                // Transform API data to chart format
-                const chartData = Object.entries(data.protocols || {}).map(([name, value]) => ({
+                // 데이터를 차트 형식으로 변환
+                const data = Object.entries(protocols).map(([name, value]) => ({
                     value,
                     name,
-                    itemStyle: { color: PROTOCOL_COLORS[name] || '#999' }
+                    itemStyle: { color: PROTOCOL_COLORS[name] || PROTOCOL_COLORS['Other'] }
                 }));
 
-                setProtocolData(chartData);
-                setLoading(false);
+                setChartData(data);
             } catch (error) {
-                console.error('❌ 시간별 프로토콜 데이터 로드 실패:', error);
-                // Use fallback data on error
-                setProtocolData([
-                    { value: 750, name: 'Modbus', itemStyle: { color: PROTOCOL_COLORS.Modbus } },
-                    { value: 80, name: 'TCP', itemStyle: { color: PROTOCOL_COLORS.TCP } },
-                    { value: 40, name: 'UDP', itemStyle: { color: PROTOCOL_COLORS.UDP } },
-                    { value: 130, name: 'LLDP', itemStyle: { color: PROTOCOL_COLORS.LLDP } },
-                ]);
+                console.error('프로토콜 데이터 조회 실패:', error);
+                setChartData([]);
+            } finally {
                 setLoading(false);
             }
         };
 
         fetchProtocolData();
 
-        // Refresh every 30 seconds
-        const interval = setInterval(fetchProtocolData, 30000);
-        return () => clearInterval(interval);
+        // 1분마다 갱신
+        const intervalId = setInterval(fetchProtocolData, 60000);
+
+        return () => clearInterval(intervalId);
     }, []);
 
     const pieOptions = {
@@ -62,7 +73,7 @@ export default function ProtocolDistribution() {
         legend: {
             orient: 'horizontal',
             bottom: 25,
-            data: protocolData.map(item => item.name),
+            data: chartData.map(d => d.name),
             itemWidth: 14,
             itemHeight: 14,
         },
@@ -71,7 +82,7 @@ export default function ProtocolDistribution() {
                 type: 'pie',
                 radius: '65%',
                 center: ['50%', '35%'],
-                data: protocolData,
+                data: chartData,
                 label: {
                     show: false,
                 },
@@ -88,6 +99,28 @@ export default function ProtocolDistribution() {
             },
         ],
     };
+
+    if (loading) {
+        return (
+            <DashboardBlock title="시간별 프로토콜 분포" sx={{ height: '100%', flex: 1 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                    <CircularProgress />
+                </Box>
+            </DashboardBlock>
+        );
+    }
+
+    if (chartData.length === 0) {
+        return (
+            <DashboardBlock title="시간별 프로토콜 분포" sx={{ height: '100%', flex: 1 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                    <Typography variant="body2" color="text.secondary">
+                        데이터가 없습니다
+                    </Typography>
+                </Box>
+            </DashboardBlock>
+        );
+    }
 
     return (
         <DashboardBlock title="시간별 프로토콜 분포" sx={{ height: '100%', flex: 1 }}>

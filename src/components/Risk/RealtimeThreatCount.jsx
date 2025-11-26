@@ -2,8 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Box, ToggleButtonGroup, ToggleButton } from '@mui/material';
 import * as echarts from 'echarts';
 import DashboardBlock from '../DashboardBlock';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+import { threatApi } from '../../service/apiService';
 
 const RealtimeThreatChart = () => {
     const chartRef = useRef(null);
@@ -12,63 +11,33 @@ const RealtimeThreatChart = () => {
     const [chartData, setChartData] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // Fallback data generation
-    const generateFallbackData = () => {
-        const data = [];
-        const now = new Date();
-        const hours = timeRange === '24h' ? 24 : 168;
-
-        for (let i = hours - 1; i >= 0; i--) {
-            const time = new Date(now.getTime() - i * 60 * 60 * 1000);
-            const hour = time.getHours();
-
-            let baseValue;
-            if (hour >= 9 && hour <= 11) {
-                baseValue = 70 + Math.random() * 30;
-            } else if (hour >= 7 && hour <= 14) {
-                baseValue = 40 + Math.random() * 40;
-            } else if (hour >= 0 && hour <= 6) {
-                baseValue = 10 + Math.random() * 20;
-            } else {
-                baseValue = 30 + Math.random() * 30;
-            }
-
-            data.push({
-                time: time,
-                value: Math.round(baseValue)
-            });
-        }
-
-        return data;
-    };
-
-    // Fetch data from API
+    // API에서 데이터 가져오기
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await fetch(`${API_BASE_URL}/dashboard/threats/timeline?range=${timeRange}`);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const result = await response.json();
+                setLoading(true);
+                const response = await threatApi.getThreatTimeline(timeRange);
+                const apiData = response.data.data || [];
 
-                // Transform API data
-                const transformedData = (result.data || []).map(item => ({
+                // API 데이터를 차트 형식으로 변환
+                const transformedData = apiData.map(item => ({
                     time: new Date(item.timestamp || item.time),
                     value: item.value || 0
                 }));
 
                 setChartData(transformedData);
-                setLoading(false);
             } catch (error) {
                 console.error('❌ 실시간 위협 수 데이터 로드 실패:', error);
-                // Use fallback mock data on error
-                setChartData(generateFallbackData());
+                // 에러 시 빈 데이터
+                setChartData([]);
+            } finally {
                 setLoading(false);
             }
-        };
 
         fetchData();
+
+        // 1분마다 데이터 업데이트
+        const interval = setInterval(fetchData, 60000);
 
         // Refresh every 60 seconds
         const interval = setInterval(fetchData, 60000);
@@ -98,6 +67,10 @@ const RealtimeThreatChart = () => {
                 return '';
             }
         });
+
+        // 최대값 동적 계산 (데이터 최대값의 1.2배)
+        const maxValue = Math.max(...chartData.map(d => d.value));
+        const yAxisMax = Math.ceil(maxValue * 1.2 / 10) * 10; // 10 단위로 올림
 
         // ECharts 옵션
         const option = {
@@ -134,6 +107,7 @@ const RealtimeThreatChart = () => {
             yAxis: {
                 type: 'value',
                 min: 0,
+                max: yAxisMax || 100, // 동적 최대값, 데이터 없으면 100
                 axisLine: {
                     show: false
                 },
@@ -207,7 +181,7 @@ const RealtimeThreatChart = () => {
                     const day = time.getDate();
                     const hour = time.getHours();
                     const value = params[0].value;
-                    
+
                     return `${month}/${day} ${hour.toString().padStart(2, '0')}:00<br/>위협 수: ${value}`;
                 }
             }
@@ -268,18 +242,18 @@ const RealtimeThreatChart = () => {
     );
 
     return (
-        <DashboardBlock 
+        <DashboardBlock
             title="실시간 위협 수"
             controls={toggleButtons}
             sx={{ height: '100%', flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
         >
-            <Box 
-                ref={chartRef} 
-                sx={{ 
-                    width: '100%', 
+            <Box
+                ref={chartRef}
+                sx={{
+                    width: '100%',
                     flex: 1,
                     minHeight: 0
-                }} 
+                }}
             />
         </DashboardBlock>
     );

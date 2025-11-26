@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
-import DashboardBlock from '../DashboardBlock'; 
-import { Box, Stack, Typography, Divider } from '@mui/material';
+import DashboardBlock from '../DashboardBlock';
+import { Box, Stack, Typography, Divider, CircularProgress } from '@mui/material';
 import { useNetworkDeviceConfig } from '../../hooks/NetworkDeviceConfigContext';
 
 // 아이콘 임포트
@@ -10,14 +10,11 @@ import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import SpeedIcon from '@mui/icons-material/Speed';
 import LinkIcon from '@mui/icons-material/Link';
 
-// ------------------------------------
-// (축소된) 내부 컴포넌트 (React.memo로 최적화)
-// ------------------------------------
+const CARD_HEIGHT = 170;
 
-const DeviceCard = React.memo(({ name, ip, icon, color }) => {
-    const Icon = icon === 'ComputerIcon' ? ComputerIcon :
-                 icon === 'CompareArrowsIcon' ? CompareArrowsIcon : DataObjectIcon;
+// ===== 컴포넌트 =====
 
+const DeviceCard = React.memo(({ name, ip, color }) => {
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 80 }}>
             <Box sx={{
@@ -31,55 +28,61 @@ const DeviceCard = React.memo(({ name, ip, icon, color }) => {
                 alignItems: 'center',
                 justifyContent: 'center'
             }}>
-                <Icon sx={{ color: 'white', fontSize: 28 }} />
+                <DataObjectIcon sx={{ color: 'white', fontSize: 28 }} />
             </Box>
-            <Typography variant="body2" fontWeight="bold" sx={{ textAlign: 'center', mb: 0.25 }}>
+            <Typography variant="body2" fontWeight="bold" sx={{ textAlign: 'center', mb: 0.25, fontSize: '0.75rem' }}>
                 {name}
             </Typography>
-            {ip && <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>{ip}</Typography>}
+            {ip && <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>{ip}</Typography>}
         </Box>
     );
 });
 
-const InfoItem = ({ icon: Icon, label, value, color }) => (
+const InfoItem = React.memo(({ icon: Icon, label, value, color }) => (
     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', color, mb: 0.5 }}> 
-            <Icon sx={{ fontSize: 16, mr: 0.5 }} /> 
+        <Box sx={{ display: 'flex', alignItems: 'center', color, mb: 0.5 }}>
+            <Icon sx={{ fontSize: 16, mr: 0.5 }} />
             <Typography variant="caption" color="text.secondary">{label}</Typography>
         </Box>
         <Typography variant="subtitle2" fontWeight="bold" color={color}>
             {value}
         </Typography>
     </Box>
-);
+));
 
-const SwitchInfoCard = ({ traffic, connections }) => (
-    <Box sx={{ 
-        p: 1.5, 
-        border: '1px solid #e0e0e0', 
-        borderRadius: 3, 
-        minWidth: 160, 
-        display: 'flex', 
-        gap: 2, 
-        backgroundColor: '#fafafa' 
-    }}>
-        <InfoItem icon={SpeedIcon} label="트래픽" value={traffic} color="#42a5f5" />
-        <InfoItem icon={LinkIcon} label="연결" value={connections} color="#42a5f5" />
-    </Box>
-);
+const SwitchInfoCard = React.memo(({ traffic, connections }) => {
+    const formattedTraffic = typeof traffic === 'number'
+        ? `${traffic.toFixed(2)} pps`
+        : traffic;
+
+    return (
+        <Box sx={{
+            p: 1.5,
+            border: '1px solid #e0e0e0',
+            borderRadius: 3,
+            minWidth: 160,
+            display: 'flex',
+            gap: 2,
+            backgroundColor: '#fafafa'
+        }}>
+            <InfoItem icon={SpeedIcon} label="트래픽" value={formattedTraffic} color="#42a5f5" />
+            <InfoItem icon={LinkIcon} label="연결" value={connections} color="#42a5f5" />
+        </Box>
+    );
+});
 
 const LayerSection = ({ label, children, showDivider = true, alignItems = "flex-start" }) => (
     <Box>
-        <Box 
-          display="flex" 
+        <Box
+          display="flex"
           alignItems={alignItems}
-          gap={1.5} 
+          gap={1.5}
           mb={2}
         >
-            <Typography 
-              variant="body2" 
-              color="text.secondary" 
-              sx={{ minWidth: 50 }} 
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ minWidth: 50 }}
             >
                 {label}
             </Typography>
@@ -89,129 +92,164 @@ const LayerSection = ({ label, children, showDivider = true, alignItems = "flex-
     </Box>
 );
 
-// ------------------------------------
-// 메인 컴포넌트 (⭐️ 로직 수정 + React.memo로 깜빡임 방지)
-// ------------------------------------
-const NetworkDevices = React.memo(() => {
-    const { deviceConfig } = useNetworkDeviceConfig();
+// ===== 메인 컴포넌트 =====
+export default function NetworkDevices() {
+    const { hmiDevices, plcDevices, switchInfo, loading } = useNetworkDeviceConfig();
 
-    // 1. 4개씩 끊어서 표시하기 위한 'chunking' 로직 (useMemo로 메모이제이션)
-    const chunkedDevices = useMemo(() => {
+    // 4개씩 끊어서 표시 - useMemo로 메모이제이션
+    const chunkedPLCs = useMemo(() => {
         const chunks = [];
-        const CHUNK_SIZE = 4; // 한 줄에 4개씩
-        for (let i = 0; i < deviceConfig.devices.length; i += CHUNK_SIZE) {
-            chunks.push(deviceConfig.devices.slice(i, i + CHUNK_SIZE));
+        const CHUNK_SIZE = 4;
+        for (let i = 0; i < plcDevices.length; i += CHUNK_SIZE) {
+            chunks.push(plcDevices.slice(i, i + CHUNK_SIZE));
         }
         return chunks;
-    }, [deviceConfig.devices]);
-    
+    }, [plcDevices]);
+
+    if (loading) {
+        return (
+            <DashboardBlock
+                title="네트워크 장치"
+                sx={{ height: '100%', flex: 5, display: 'flex', flexDirection: 'column' }}
+            >
+                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                    <CircularProgress />
+                </Box>
+            </DashboardBlock>
+        );
+    }
+
     return (
-        <DashboardBlock 
-            title="네트워크 장치" 
-            sx={{ 
-                height: '100%', 
-                flex: 5, 
-                display: 'flex', 
-                flexDirection: 'column' 
+        <DashboardBlock
+            title="네트워크 장치"
+            sx={{
+                height: '100%',
+                flex: 5,
+                display: 'flex',
+                flexDirection: 'column'
             }}
         >
-            <Stack 
-                spacing={3} 
-                sx={{ 
-                    flex: 1, 
-                    minHeight: 0, 
+            <Stack
+                spacing={3}
+                sx={{
+                    flex: 1,
+                    minHeight: 0,
                     display: 'flex',
                     flexDirection: 'column',
-                    py: 2, 
+                    py: 2,
                 }}
-            > 
-                
-                {/* 1. 제어 계층 */}
+            >
+
+                {/* 1. 제어 계층 (HMI/SCADA) */}
                 <LayerSection label="제어 계층" alignItems="center">
-                    <Box display="flex" justifyContent="center">
-                        <DeviceCard {...deviceConfig.control} />
+                    <Box display="flex" justifyContent="center" flexWrap="wrap" gap={1.5}>
+                        {hmiDevices.length > 0 ? (
+                            hmiDevices.map(device => (
+                                <DeviceCard
+                                    key={device.id}
+                                    name={device.name}
+                                    ip={device.ip}
+                                    color={device.color}
+                                />
+                            ))
+                        ) : (
+                            <Typography variant="body2" color="text.secondary">
+                                HMI/SCADA 장치 없음
+                            </Typography>
+                        )}
                     </Box>
                 </LayerSection>
 
                 {/* 2. 스위치 */}
                 <LayerSection label="스위치" alignItems="center">
                     <Box display="flex" justifyContent="center" alignItems="flex-start" gap={3}>
-                        <DeviceCard 
-                            name={deviceConfig.switch.name}
-                            icon={deviceConfig.switch.icon}
-                            color={deviceConfig.switch.color}
-                        />
+                        <Box sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            width: 80
+                        }}>
+                            <Box sx={{
+                                backgroundColor: '#2196F3',
+                                borderRadius: 2,
+                                p: 1,
+                                mb: 0.5,
+                                width: 48,
+                                height: 48,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}>
+                                <CompareArrowsIcon sx={{ color: 'white', fontSize: 28 }} />
+                            </Box>
+                            <Typography variant="body2" fontWeight="bold" sx={{ textAlign: 'center', mb: 0.25 }}>
+                                Switch
+                            </Typography>
+                        </Box>
                         <SwitchInfoCard
-                            traffic={deviceConfig.switch.traffic}
-                            connections={deviceConfig.switch.connections}
+                            traffic={switchInfo.traffic}
+                            connections={switchInfo.connections}
                         />
                     </Box>
                 </LayerSection>
 
-                {/* ⭐️ 3. '장치' 섹션 (수정된 부분) */}
-                <Box 
+                {/* 3. 장치 (PLC) */}
+                <Box
                     sx={{
-                        flex: 1, 
-                        minHeight: 0, 
+                        flex: 1,
+                        minHeight: 0,
                         display: 'flex',
                         alignItems: 'center',
-                        gap: 1.5, 
+                        gap: 1.5,
                     }}
                 >
-                    {/* 3a. 레이블 */}
-                    <Typography 
-                        variant="body2" 
-                        color="text.secondary" 
-                        sx={{ minWidth: 50, pt: 0.5 }} // ⭐️ 상단 정렬을 위해 패딩
+                    <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ minWidth: 50, pt: 0.5 }}
                     >
-                        {`장치 (${deviceConfig.devices.length})`}
+                        {`장치 (${plcDevices.length})`}
                     </Typography>
-                    
-                    {/* ⭐️ 3b. 콘텐츠 래퍼 (이 부분이 핵심) */}
-                    <Box 
+
+                    <Box
                         sx={{
                             flex: 1,
-                            height: '100%', 
-                            overflowY: 'auto', 
-                            
-                            // ⭐️ 1. 스크롤 영역을 flex 컨테이너로 만듦
+                            height: '100%',
+                            overflowY: 'auto',
                             display: 'flex',
-                            // ⭐️ 2. 자식(Stack)을 '세로' 중앙에 배치
-                            alignItems: 'center', 
-                            // ⭐️ 3. 자식(Stack)을 '가로' 중앙에 배치
+                            alignItems: 'center',
                             justifyContent: 'center',
                         }}
                     >
-                        {/* ⭐️ 3c. Stack 자체의 정렬(alignItems)은 제거 */}
-                        <Stack spacing={2} sx={{ my: 'auto' }}> 
-                            {chunkedDevices.map((row, idx) => (
-                                // ⭐️ 3d. 각 줄은 항상 중앙 정렬
-                                <Box 
-                                    key={idx} 
-                                    display="flex" 
-                                    justifyContent="center" 
-                                    flexWrap="wrap" 
-                                    gap={1.5}
-                                >
-                                    {row.map(device => (
-                                        <DeviceCard 
-                                            key={device.id}
-                                            name={device.name}
-                                            ip={device.ip}
-                                            icon="DataObjectIcon"
-                                            color={device.color}
-                                        />
-                                    ))}
-                                </Box>
-                            ))}
+                        <Stack spacing={2} sx={{ my: 'auto' }}>
+                            {chunkedPLCs.length > 0 ? (
+                                chunkedPLCs.map((row, idx) => (
+                                    <Box
+                                        key={idx}
+                                        display="flex"
+                                        justifyContent="center"
+                                        flexWrap="wrap"
+                                        gap={1.5}
+                                    >
+                                        {row.map(device => (
+                                            <DeviceCard
+                                                key={device.id}
+                                                name={device.name}
+                                                ip={device.ip}
+                                                color={device.color}
+                                            />
+                                        ))}
+                                    </Box>
+                                ))
+                            ) : (
+                                <Typography variant="body2" color="text.secondary">
+                                    PLC 장치 없음
+                                </Typography>
+                            )}
                         </Stack>
                     </Box>
                 </Box>
             </Stack>
         </DashboardBlock>
     );
-});
-
-NetworkDevices.displayName = 'NetworkDevices';
-
-export default NetworkDevices;
+}

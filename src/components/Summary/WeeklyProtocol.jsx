@@ -1,87 +1,80 @@
 import React, { useState, useEffect } from 'react';
 import DashboardBlock from '../DashboardBlock';
 import ReactECharts from 'echarts-for-react';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+import { CircularProgress, Box, Typography } from '@mui/material';
+import { protocolApi } from '../../service/apiService';
 
 const PROTOCOL_COLORS = {
-    Modbus: '#A0E7E5',
-    TCP: '#F08080',
-    UDP: '#F7DC6F',
-    LLDP: '#F5CBA7',
+    // 실제 프로토콜 이름 (소문자) - 파랑/초록 계열
+    'modbus': '#4FC3F7',      // 밝은 하늘색
+    'tcp_session': '#66BB6A',  // 초록
+    'udp': '#26C6DA',         // 청록색
+    'http': '#42A5F5',        // 파랑
+    'icmp': '#5C6BC0',        // 남색
+    'arp': '#29B6F6',         // 밝은 파랑
+    'lldp': '#26A69A',        // 청록
+    'dhcp': '#66BB6A',        // 초록
+    's7comm': '#80CBC4',      // 민트
+    'mms': '#81C784',         // 연두
+    'xgt_fen': '#4DD0E1',     // 하늘색
+    'unknown': '#B0BEC5',     // 회색
+    // 대문자 버전도 지원
+    'Modbus': '#4FC3F7',
+    'TCP': '#66BB6A',
+    'UDP': '#26C6DA',
+    'HTTP': '#42A5F5',
+    'ICMP': '#5C6BC0',
+    'ARP': '#29B6F6',
+    'LLDP': '#26A69A',
+    'Other': '#B0BEC5'
 };
 
+
 export default function WeeklyProtocol() {
-    const [chartData, setChartData] = useState({
-        dates: [],
-        Modbus: [],
-        TCP: [],
-        UDP: [],
-        LLDP: [],
-    });
+    const [chartData, setChartData] = useState({ dates: [], series: {} });
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const fetchWeeklyData = async () => {
+        const fetchWeeklyProtocol = async () => {
             try {
-                const response = await fetch(`${API_BASE_URL}/protocols/weekly`);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const result = await response.json();
+                setLoading(true);
+                const response = await protocolApi.getWeeklyProtocol();
+                const dailyData = response.data.data || [];
 
-                // Transform API data to chart format
-                const dates = [];
-                const protocols = {
-                    Modbus: [],
-                    TCP: [],
-                    UDP: [],
-                    LLDP: [],
-                };
+                // 날짜와 프로토콜 데이터 추출
+                const dates = dailyData.map(d => d.date);
+                const protocols = new Set();
 
-                (result.data || []).forEach(day => {
-                    // Format date (YYYY-MM-DD -> M/D)
-                    const dateStr = day.date || '';
-                    const dateParts = dateStr.split('-');
-                    const formattedDate = dateParts.length === 3
-                        ? `${parseInt(dateParts[1])}/${parseInt(dateParts[2])}`
-                        : dateStr;
-                    dates.push(formattedDate);
-
-                    // Calculate percentages
-                    const total = day.total || 1; // Avoid division by zero
-                    const dayProtocols = day.protocols || {};
-
-                    protocols.Modbus.push(((dayProtocols.Modbus || 0) / total * 100).toFixed(2));
-                    protocols.TCP.push(((dayProtocols.TCP || 0) / total * 100).toFixed(2));
-                    protocols.UDP.push(((dayProtocols.UDP || 0) / total * 100).toFixed(2));
-                    protocols.LLDP.push(((dayProtocols.LLDP || 0) / total * 100).toFixed(2));
+                // 모든 프로토콜 수집
+                dailyData.forEach(day => {
+                    Object.keys(day.protocols || {}).forEach(protocol => protocols.add(protocol));
                 });
 
-                setChartData({
-                    dates,
-                    ...protocols,
+                // 프로토콜별 데이터 구성 (백분율로 변환)
+                const series = {};
+                protocols.forEach(protocol => {
+                    series[protocol] = dailyData.map(day => {
+                        const protocolCount = day.protocols[protocol] || 0;
+                        const total = day.total || 1;
+                        return ((protocolCount / total) * 100).toFixed(2);
+                    });
                 });
-                setLoading(false);
+
+                setChartData({ dates, series });
             } catch (error) {
-                console.error('❌ 주간 프로토콜 데이터 로드 실패:', error);
-                // Use fallback data on error
-                setChartData({
-                    dates: ['11/17', '11/18', '11/19', '11/20', '11/21', '11/22', '11/23'],
-                    Modbus: [73.73, 72.81, 72.94, 70.97, 71.17, 72.28, 70.91],
-                    TCP: [17.51, 19.35, 18.35, 19.35, 19.95, 18.3, 19.55],
-                    UDP: [5.99, 4.61, 6.42, 6.91, 6.35, 6.59, 6.82],
-                    LLDP: [2.76, 3.23, 2.29, 2.76, 2.54, 2.84, 2.73],
-                });
+                console.error('주간 프로토콜 데이터 조회 실패:', error);
+                setChartData({ dates: [], series: {} });
+            } finally {
                 setLoading(false);
             }
         };
 
-        fetchWeeklyData();
+        fetchWeeklyProtocol();
 
-        // Refresh every 60 seconds
-        const interval = setInterval(fetchWeeklyData, 60000);
-        return () => clearInterval(interval);
+        // 5분마다 갱신
+        const intervalId = setInterval(fetchWeeklyProtocol, 300000);
+
+        return () => clearInterval(intervalId);
     }, []);
 
     const trendOptions = {
@@ -94,16 +87,14 @@ export default function WeeklyProtocol() {
             formatter: function (params) {
                 let res = params[0].name + '<br/>';
                 for (let i = 0; i < params.length; i++) {
-                    const value = typeof params[i].value === 'number'
-                        ? params[i].value.toFixed(2)
-                        : params[i].value;
+                    const value = typeof params[i].value === 'number' ? params[i].value.toFixed(2) : params[i].value;
                     res += params[i].marker + params[i].seriesName + ': ' + value + '%<br/>';
                 }
                 return res;
             }
         },
         legend: {
-            data: ['Modbus', 'TCP', 'UDP', 'LLDP'],
+            data: Object.keys(chartData.series),
             orient: 'horizontal',
             bottom: 20,
             itemWidth: 14,
@@ -129,38 +120,37 @@ export default function WeeklyProtocol() {
             bottom: '22%',
             containLabel: true
         },
-        series: [
-            {
-                name: 'LLDP',
-                type: 'bar',
-                stack: 'total',
-                data: chartData.LLDP,
-                itemStyle: { color: PROTOCOL_COLORS.LLDP }
-            },
-            {
-                name: 'UDP',
-                type: 'bar',
-                stack: 'total',
-                data: chartData.UDP,
-                itemStyle: { color: PROTOCOL_COLORS.UDP }
-            },
-            {
-                name: 'TCP',
-                type: 'bar',
-                stack: 'total',
-                data: chartData.TCP,
-                itemStyle: { color: PROTOCOL_COLORS.TCP }
-            },
-            {
-                name: 'Modbus',
-                type: 'bar',
-                stack: 'total',
-                data: chartData.Modbus,
-                itemStyle: { color: PROTOCOL_COLORS.Modbus },
-                label: { show: false }
-            }
-        ]
+        series: Object.entries(chartData.series).map(([protocol, data]) => ({
+            name: protocol,
+            type: 'bar',
+            stack: 'total',
+            data: data,
+            itemStyle: { color: PROTOCOL_COLORS[protocol] || PROTOCOL_COLORS['Other'] },
+            label: { show: false }
+        }))
     };
+
+    if (loading) {
+        return (
+            <DashboardBlock title="주간 프로토콜 현황" sx={{ height: '100%', flex: 1 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                    <CircularProgress />
+                </Box>
+            </DashboardBlock>
+        );
+    }
+
+    if (chartData.dates.length === 0 || Object.keys(chartData.series).length === 0) {
+        return (
+            <DashboardBlock title="주간 프로토콜 현황" sx={{ height: '100%', flex: 1 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                    <Typography variant="body2" color="text.secondary">
+                        데이터가 없습니다
+                    </Typography>
+                </Box>
+            </DashboardBlock>
+        );
+    }
 
     return (
         <DashboardBlock title="주간 프로토콜 현황" sx={{ height: '100%', flex: 1 }}>

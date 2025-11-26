@@ -1,10 +1,9 @@
 // src/components/Risk/ThreatGradeIncidence.jsx
 import React, { useState, useEffect } from 'react';
 import DashboardBlock from '../DashboardBlock';
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, CircularProgress } from '@mui/material';
 import ReactECharts from 'echarts-for-react';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+import { threatApi } from '../../service/apiService';
 
 export default function ThreatGradeIncidence() {
     const [barData, setBarData] = useState([
@@ -17,28 +16,26 @@ export default function ThreatGradeIncidence() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await fetch(`${API_BASE_URL}/dashboard/threats/by-level`);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const data = await response.json();
+                setLoading(true);
+                const response = await threatApi.getThreatsByLevel();
+                const data = response.data;
 
-                // Update bar chart data
+                // 막대 그래프 데이터 업데이트
                 setBarData([
                     { label: '경고', value: data.attention || 0, color: '#FFA726' },
                     { label: '긴급', value: data.warning || 0, color: '#E91E63' }
                 ]);
 
-                // Update table data
-                setTableData((data.destinations || []).map(dest => ({
+                // 테이블 데이터 업데이트 (상위 3개 목적지)
+                const destinations = (data.destinations || []).map(dest => ({
                     ip: dest.ip,
                     count: parseInt(dest.count) || 0
-                })));
+                }));
+                setTableData(destinations);
 
-                setLoading(false);
             } catch (error) {
                 console.error('❌ 위협 등급별 사건 수 데이터 로드 실패:', error);
-                // Use fallback data on error
+                // 에러 시 fallback 데이터
                 setBarData([
                     { label: '경고', value: 21, color: '#FFA726' },
                     { label: '긴급', value: 2, color: '#E91E63' }
@@ -48,16 +45,21 @@ export default function ThreatGradeIncidence() {
                     { ip: 'PLC-002', count: 10 },
                     { ip: 'PLC-003', count: 5 },
                 ]);
+            } finally {
                 setLoading(false);
             }
         };
 
         fetchData();
 
-        // Refresh every 60 seconds
+        // 1분마다 갱신
         const interval = setInterval(fetchData, 60000);
+
         return () => clearInterval(interval);
     }, []);
+    // 동적 x축 최대값 계산
+    const maxValue = Math.max(...barData.map(item => item.value));
+    const xAxisMax = Math.ceil(maxValue * 1.2 / 10) * 10 || 25; // 데이터의 1.2배, 최소 25
 
     const option = {
         animation: false,
@@ -70,7 +72,8 @@ export default function ThreatGradeIncidence() {
         },
         xAxis: {
             type: 'value',
-            show: false
+            show: false,
+            max: xAxisMax
         },
         yAxis: {
             type: 'category',
