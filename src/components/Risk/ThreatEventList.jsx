@@ -55,9 +55,9 @@ const DashboardBlock = ({ title, controls, children, sx }) => (
 );
 
 
-// 테이블 헤더 정의 (변경 없음)
+// 테이블 헤더 정의
 const TABLE_HEADERS = [
-  { id: 'severity', label: '위험도', minWidth: 80 },
+  { id: 'severity', label: '심각도', minWidth: 80 },
   { id: 'index', label: 'Index', minWidth: 60 },
   { id: 'timestamp', label: '발생 시각', minWidth: 140 },
   { id: 'threatType', label: '위협 유형', minWidth: 140 },
@@ -153,8 +153,8 @@ export default function ThreatEventTable({ width, height, data = [], onEventSele
       >
         <MenuItem value="id_asc">Index별 정렬 오름차순</MenuItem>
         <MenuItem value="id_desc">Index별 정렬 내림차순</MenuItem>
-        <MenuItem value="severity_asc">위험도별 정렬 오름차순</MenuItem>
-        <MenuItem value="severity_desc">위험도별 정렬 내림차순</MenuItem>
+        <MenuItem value="severity_asc">심각도별 정렬 오름차순</MenuItem>
+        <MenuItem value="severity_desc">심각도별 정렬 내림차순</MenuItem>
       </Select>
     </Box>
   );

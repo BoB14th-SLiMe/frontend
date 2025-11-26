@@ -56,13 +56,23 @@ apiClient.interceptors.response.use(
 export const dashboardApi = {
   getBannerStats: () => apiClient.get('/frontend/banner/stats'),
   getDashboardStats: () => apiClient.get('/dashboard/stats'),
-  getProtocolDistribution: (period = '1h') => 
+  getProtocolDistribution: (period = '1h') =>
     apiClient.get('/dashboard/protocol-distribution', { params: { period } }),
-  getTrafficData: (range = '7d') => 
+  getTrafficData: (range = '7d') =>
     apiClient.get('/dashboard/traffic', { params: { range } }),
   getTopology: () => apiClient.get('/topology'),
-  getAlarms: (status = 'all', limit = 10) => 
+  getAlarms: (status = 'all', limit = 10) =>
     apiClient.get('/alarms', { params: { status, limit } }),
+};
+
+// ============================================
+// Summary APIs
+// ============================================
+export const summaryApi = {
+  getAlerts: (limit = 20) =>
+    apiClient.get('/summary/alerts', { params: { limit } }),
+  getMetrics: () =>
+    apiClient.get('/summary/metrics'),
 };
 
 // ============================================

@@ -130,61 +130,43 @@ export default function FilteredThreatTable({ onEventSelect }) {
 
   // 매핑 함수들
   const mapSeverity = (level) => {
-    if (!level) return '정보';
-    const lowerLevel = level.toLowerCase();
+    if (!level) return '경고';
+    const normalized = level.toLowerCase();
     const map = {
       'warning': '긴급',
-      'attention': '경고',
-      'critical': '긴급',
-      'high': '경고',
-      'medium': '보통',
-      'low': '낮음'
+      'attention': '경고'
     };
-    return map[lowerLevel] || level;
+    return map[normalized] || '경고';
   };
 
   const mapSeverityLevel = (level) => {
-    if (!level) return 0;
-    const lowerLevel = level.toLowerCase();
+    if (!level) return 1;
+    const normalized = level.toLowerCase();
     const map = {
-      'warning': 3,
-      'attention': 2,
-      'critical': 3,
-      'high': 2,
-      'medium': 1,
-      'low': 0
+      'warning': 2,
+      'attention': 1
     };
-    return map[lowerLevel] || 0;
+    return map[normalized] || 1;
   };
 
   const mapSeverityColor = (level) => {
-    if (!level) return 'default';
-    const lowerLevel = level.toLowerCase();
+    if (!level) return 'warning';
+    const normalized = level.toLowerCase();
     const map = {
-      'warning': 'error',      // 빨간색
-      'attention': 'warning',  // 주황색
-      'critical': 'error',
-      'high': 'warning',
-      'medium': 'info',
-      'low': 'success'
+      'warning': 'error',
+      'attention': 'warning'
     };
-    return map[lowerLevel] || 'default';
+    return map[normalized] || 'warning';
   };
 
   const mapStatus = (status) => {
-    if (!status) return '신규';
-    const lowerStatus = status.toLowerCase();
     const map = {
-      'new': '신규',
       'detected': '신규',
-      'analyzing': '분석중',
       'investigating': '확인중',
-      'confirmed': '확인',
       'resolved': '조치완료',
-      'completed': '조치완료',
       'false_positive': '오탐'
     };
-    return map[lowerStatus] || status;
+    return map[status] || status;
   };
 
   return (

@@ -40,8 +40,8 @@ const ModernGaugeBox = ({ score }) => {
   if (score > 80) { // 3. 81~100% (Red)
     gaugeColor = '#F44336';
     statusText = '위험';
-  } else if (score > 30) { // 2. 31~80% (Blue)
-    gaugeColor = '#2196F3';
+  } else if (score > 30) { // 2. 31~80% (Orange)
+    gaugeColor = '#FF9800';
     statusText = '경고';
   }
 

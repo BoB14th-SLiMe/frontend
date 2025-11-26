@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { assetApi, trafficApi, threatApi } from '../service/apiService';
 
 const NetworkDeviceConfigContext = createContext();
@@ -44,8 +44,15 @@ export const NetworkDeviceConfigProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-  // API에서 데이터 가져오기
-  const fetchDeviceData = async () => {
+  // 이전 데이터를 저장하여 변경 여부 확인
+  const prevDataRef = useRef({
+    hmiDevices: [],
+    plcDevices: [],
+    networkStats: { pps: 0, connections: 0 }
+  });
+
+  // API에서 데이터 가져오기 - useCallback으로 메모이제이션
+  const fetchDeviceData = useCallback(async () => {
     try {
       console.log('🔄 NetworkDeviceConfig: 데이터 가져오기 시작', { isInitialLoad });
 
@@ -92,7 +99,12 @@ export const NetworkDeviceConfigProvider = ({ children }) => {
           icon: 'ComputerIcon'
         }));
       console.log('✅ HMI 장비 조회 완료:', hmiData.length, '개');
-      setHmiDevices(hmiData);
+
+      // HMI 데이터가 변경되었을 때만 업데이트 (초기 로드 시에는 무조건 업데이트)
+      if (isInitialLoad || JSON.stringify(hmiData) !== JSON.stringify(prevDataRef.current.hmiDevices)) {
+        setHmiDevices(hmiData);
+        prevDataRef.current.hmiDevices = hmiData;
+      }
 
       // PLC 장비 조회
       const plcResponse = await assetApi.getAssetsByType('plc');
@@ -107,7 +119,12 @@ export const NetworkDeviceConfigProvider = ({ children }) => {
           icon: 'DataObjectIcon'
         }));
       console.log('✅ PLC 장비 조회 완료:', plcData.length, '개');
-      setPlcDevices(plcData);
+
+      // PLC 데이터가 변경되었을 때만 업데이트 (초기 로드 시에는 무조건 업데이트)
+      if (isInitialLoad || JSON.stringify(plcData) !== JSON.stringify(prevDataRef.current.plcDevices)) {
+        setPlcDevices(plcData);
+        prevDataRef.current.plcDevices = plcData;
+      }
 
       // 네트워크 통계 조회
       const statsResponse = await trafficApi.getNetworkStats();
@@ -116,7 +133,14 @@ export const NetworkDeviceConfigProvider = ({ children }) => {
         connections: statsResponse.data.connections || 0
       };
       console.log('✅ 네트워크 통계 조회 완료:', stats);
-      setNetworkStats(stats);
+
+      // 네트워크 통계가 변경되었을 때만 업데이트 (초기 로드 시에는 무조건 업데이트)
+      if (isInitialLoad ||
+          stats.pps !== prevDataRef.current.networkStats.pps ||
+          stats.connections !== prevDataRef.current.networkStats.connections) {
+        setNetworkStats(stats);
+        prevDataRef.current.networkStats = stats;
+      }
 
     } catch (error) {
       console.error('❌ 네트워크 장치 데이터 로드 실패:', error);
@@ -132,36 +156,39 @@ export const NetworkDeviceConfigProvider = ({ children }) => {
         setIsInitialLoad(false);
       }
     }
-  };
+  }, [isInitialLoad]);
 
   // 초기 로드 및 주기적 갱신
   useEffect(() => {
     fetchDeviceData();
 
-    // 30초마다 갱신
-    const interval = setInterval(fetchDeviceData, 30000);
+    // 1초마다 갱신 (네트워크 통계는 실시간으로 업데이트)
+    const interval = setInterval(fetchDeviceData, 1000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchDeviceData]);
 
-  // 스위치 정보 (SCADA 서버 정보)
-  const switchInfo = {
+  // 스위치 정보 (SCADA 서버 정보) - useMemo로 메모이제이션
+  const switchInfo = useMemo(() => ({
     name: 'SWITCH',
     traffic: formatPPS(networkStats.pps),
     connections: networkStats.connections,
     icon: 'CompareArrowsIcon',
     color: '#42a5f5'
-  };
+  }), [networkStats.pps, networkStats.connections]);
 
-  // HMI (제어 시스템 - SCADA)
-  const control = hmiDevices.length > 0 ? hmiDevices[0] : {
-    name: 'SCADA',
-    ip: '데이터 없음',
-    icon: 'ComputerIcon',
-    color: '#9e9e9e'
-  };
+  // HMI (제어 시스템 - SCADA) - useMemo로 메모이제이션
+  const control = useMemo(() =>
+    hmiDevices.length > 0 ? hmiDevices[0] : {
+      name: 'SCADA',
+      ip: '데이터 없음',
+      icon: 'ComputerIcon',
+      color: '#9e9e9e'
+    }
+  , [hmiDevices]);
 
-  const value = {
+  // Context value - useMemo로 메모이제이션
+  const value = useMemo(() => ({
     hmiDevices,
     plcDevices,
     control,
@@ -169,7 +196,7 @@ export const NetworkDeviceConfigProvider = ({ children }) => {
     networkStats,
     loading,
     refreshData: fetchDeviceData,
-  };
+  }), [hmiDevices, plcDevices, control, switchInfo, networkStats, loading, fetchDeviceData]);
 
   return (
     <NetworkDeviceConfigContext.Provider value={value}>

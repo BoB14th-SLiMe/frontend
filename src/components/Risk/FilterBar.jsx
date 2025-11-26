@@ -79,8 +79,8 @@ export default function FilterBar({
             }}
           >
             <ToggleButton value="all">전체</ToggleButton>
-            <ToggleButton value="경고">경고</ToggleButton>
-            <ToggleButton value="긴급">긴급</ToggleButton>
+            <ToggleButton value="attention">경고</ToggleButton>
+            <ToggleButton value="warning">긴급</ToggleButton>
           </ToggleButtonGroup>
         </FormControl>
 

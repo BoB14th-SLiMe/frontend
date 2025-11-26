@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import DashboardBlock from '../DashboardBlock';
 import { Box, Stack, Typography, Divider, CircularProgress } from '@mui/material';
 import { useNetworkDeviceConfig } from '../../hooks/NetworkDeviceConfigContext';
@@ -14,7 +14,7 @@ const CARD_HEIGHT = 170;
 
 // ===== 컴포넌트 =====
 
-const DeviceCard = ({ name, ip, color }) => {
+const DeviceCard = React.memo(({ name, ip, color }) => {
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 80 }}>
             <Box sx={{
@@ -36,9 +36,9 @@ const DeviceCard = ({ name, ip, color }) => {
             {ip && <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>{ip}</Typography>}
         </Box>
     );
-};
+});
 
-const InfoItem = ({ icon: Icon, label, value, color }) => (
+const InfoItem = React.memo(({ icon: Icon, label, value, color }) => (
     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', color, mb: 0.5 }}>
             <Icon sx={{ fontSize: 16, mr: 0.5 }} />
@@ -48,9 +48,9 @@ const InfoItem = ({ icon: Icon, label, value, color }) => (
             {value}
         </Typography>
     </Box>
-);
+));
 
-const SwitchInfoCard = ({ traffic, connections }) => {
+const SwitchInfoCard = React.memo(({ traffic, connections }) => {
     const formattedTraffic = typeof traffic === 'number'
         ? `${traffic.toFixed(2)} pps`
         : traffic;
@@ -69,7 +69,7 @@ const SwitchInfoCard = ({ traffic, connections }) => {
             <InfoItem icon={LinkIcon} label="연결" value={connections} color="#42a5f5" />
         </Box>
     );
-};
+});
 
 const LayerSection = ({ label, children, showDivider = true, alignItems = "flex-start" }) => (
     <Box>
@@ -96,12 +96,15 @@ const LayerSection = ({ label, children, showDivider = true, alignItems = "flex-
 export default function NetworkDevices() {
     const { hmiDevices, plcDevices, switchInfo, loading } = useNetworkDeviceConfig();
 
-    // 4개씩 끊어서 표시
-    const chunkedPLCs = [];
-    const CHUNK_SIZE = 4;
-    for (let i = 0; i < plcDevices.length; i += CHUNK_SIZE) {
-        chunkedPLCs.push(plcDevices.slice(i, i + CHUNK_SIZE));
-    }
+    // 4개씩 끊어서 표시 - useMemo로 메모이제이션
+    const chunkedPLCs = useMemo(() => {
+        const chunks = [];
+        const CHUNK_SIZE = 4;
+        for (let i = 0; i < plcDevices.length; i += CHUNK_SIZE) {
+            chunks.push(plcDevices.slice(i, i + CHUNK_SIZE));
+        }
+        return chunks;
+    }, [plcDevices]);
 
     if (loading) {
         return (

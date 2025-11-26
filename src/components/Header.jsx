@@ -20,7 +20,7 @@ function Header() {
     statusColor = '#F44336'; // Red
   } else if (score > 30) {
     statusText = '경고';
-    statusColor = '#2196F3'; // Blue
+    statusColor = '#FF9800'; // Orange
   }
 
   return (

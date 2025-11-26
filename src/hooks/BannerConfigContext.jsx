@@ -130,16 +130,16 @@ export const BannerConfigProvider = ({ children }) => {
 
   const [sseConnected, setSseConnected] = useState(false);
 
-  // 초기 데이터 로드
+  // 초기 데이터 로드 및 주기적 갱신
   useEffect(() => {
-    const fetchInitialData = async () => {
+    const fetchBannerData = async () => {
       try {
         const response = await fetch(`${API_BASE_URL}/frontend/banner/stats`);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
-        
+
         // 데이터 업데이트
         if (data.threat_score) {
           updateItemData('threat_score', { score: data.threat_score.score });
@@ -168,14 +168,20 @@ export const BannerConfigProvider = ({ children }) => {
         if (data.gpu) {
           updateItemData('gpu', { value: data.gpu.value });
         }
-        
-        console.log('✅ 배너 통계 데이터 로드 완료');
+
+        console.log('✅ 배너 통계 데이터 로드 완료', { threat_score: data.threat_score?.score });
       } catch (error) {
         console.error('❌ 배너 통계 로드 실패:', error);
       }
     };
 
-    fetchInitialData();
+    // 즉시 실행
+    fetchBannerData();
+
+    // 5초마다 갱신 (SSE와 별도로 주기적 갱신)
+    const interval = setInterval(fetchBannerData, 5000);
+
+    return () => clearInterval(interval);
   }, []);
 
   // SSE 구독 (개선됨)
@@ -190,7 +196,7 @@ export const BannerConfigProvider = ({ children }) => {
       
       onStats: (data) => {
         console.log('📊 배너 통계 업데이트:', data);
-        
+
         // 실시간 데이터 업데이트
         if (data.recentThreats !== undefined) {
           updateItemData('anomaly_day', { number: data.recentThreats });
@@ -204,10 +210,11 @@ export const BannerConfigProvider = ({ children }) => {
         if (data.criticalAlerts !== undefined) {
           updateItemData('critical_alert', { number: data.criticalAlerts });
         }
-        
-        // 위협 점수 계산
-        const threatScore = Math.min(100, Math.floor(data.recentThreats * 2));
-        updateItemData('threat_score', { score: threatScore });
+
+        // 위협 점수는 SSE에서 직접 받거나 API에서 받은 값 유지 (SSE에서 재계산하지 않음)
+        if (data.threatScore !== undefined) {
+          updateItemData('threat_score', { score: data.threatScore });
+        }
       },
       
       onError: (error) => {
